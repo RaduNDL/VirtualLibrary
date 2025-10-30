@@ -1,0 +1,73 @@
+﻿@page
+@model VirtualLibrary.Pages.Library.IndexModel
+@{
+    ViewData["Title"] = "Library";
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+}
+
+<div class="container mt-4">
+    <div class="d-flex align-items-center justify-content-between">
+        <h2 class="text-primary mb-0">Available Books</h2>
+    </div>
+
+    <form method="get" class="mt-3 mb-3">
+        <div class="input-group">
+            <input type="text" name="q" value="@Model.q" class="form-control" placeholder="Search by title, author, ISBN..." />
+            <button class="btn btn-outline-secondary" type="submit">Search</button>
+        </div>
+    </form>
+
+    @if (Model.Products == null || !Model.Products.Any())
+    {
+        if (!string.IsNullOrWhiteSpace(Model.q))
+        {
+            <div class="alert alert-info">
+                No books match "<strong>@Model.q</strong>".
+                <a href="@Url.Page("/Library/Index")" class="alert-link">Clear search</a>
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-info">No books available yet.</div>
+        }
+    }
+    else
+    {
+        <div class="row row-cols-1 row-cols-md-3 g-4">
+            @foreach (var product in Model.Products)
+            {
+                <div class="col">
+                    <div class="card h-100 shadow-sm">
+                        <img class="card-img-top"
+                             src="~/@product.ImagePath"
+                             alt="@product.Title"
+                             asp-append-version="true"
+                             onerror="this.src='/images/no-cover.svg';this.onerror=null;" />
+
+                        <div class="card-body">
+                            <h5 class="card-title text-success">@product.Title</h5>
+                            @if (!string.IsNullOrWhiteSpace(product.Author))
+                            {
+                                <p class="text-muted mb-1">@product.Author</p>
+                            }
+                            <p class="card-text text-muted">@product.Description</p>
+
+                            <p class="card-text">
+                                <strong>Category:</strong> @product.Category?.Name <br />
+                                <strong>Supplier:</strong> @product.Supplier?.Name <br />
+                                <strong>Price:</strong> @product.Price.ToString("0.00") RON <br />
+                                <strong>Stock:</strong> @product.Stock
+                            </p>
+                        </div>
+
+                        <div class="card-footer bg-white border-0">
+                            <a asp-page="/Products/Details" asp-route-id="@product.Id" class="btn btn-outline-primary btn-sm">
+                                Details
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>

@@ -1,0 +1,26 @@
+﻿@page "{id:int}"
+@model VirtualLibrary.Pages.Suppliers.DeleteModel
+@{
+    ViewData["Title"] = "Delete Supplier";
+}
+<h1>Delete Supplier</h1>
+<hr />
+@if (!string.IsNullOrEmpty(Model.ErrorMessage))
+{
+    <div class="alert alert-danger">@Model.ErrorMessage</div>
+}
+<div class="mb-3">
+    <strong>Name:</strong> @Model.Supplier?.Name
+</div>
+<div class="mb-3">
+    <strong>Contact:</strong> @Model.Supplier?.ContactInfo
+</div>
+<div class="mb-3">
+    <strong>Address:</strong> @Model.Supplier?.Address
+</div>
+
+<form method="post">
+    <input type="hidden" asp-for="Supplier!.SupplierId" />
+    <button type="submit" class="btn btn-danger">Confirm delete</button>
+    <a asp-page="Index" class="btn btn-secondary">Cancel</a>
+</form>

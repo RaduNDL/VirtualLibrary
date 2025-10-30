@@ -1,0 +1,22 @@
+﻿@page
+@model VirtualLibrary.Pages.Admin.IndexModel
+@{
+    ViewData["Title"] = "Admin Panel";
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+}
+
+<h1 class="mb-4 text-center">Administrator Panel</h1>
+
+<div class="card shadow-sm p-4">
+    <h4>Welcome, @User.Identity?.Name!</h4>
+    <p>From here you can manage the application’s content and users.</p>
+
+    <hr/>
+
+    <div class="list-group">
+        <a asp-page="/Products/Index" class="list-group-item list-group-item-action">Manage Products</a>
+        <a asp-page="/Categories/Index" class="list-group-item list-group-item-action">Manage Categories</a>
+        <a asp-page="/Suppliers/Index" class="list-group-item list-group-item-action">Manage Suppliers</a>
+        <a asp-page="/Orders/Index" class="list-group-item list-group-item-action">View Orders</a>
+    </div>
+</div>

@@ -1,0 +1,21 @@
+﻿@page "{id:int}"
+@model VirtualLibrary.Pages.Categories.DeleteModel
+@{
+    ViewData["Title"] = "Delete Category";
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+}
+
+<div class="container mt-4">
+    <h2 class="text-danger mb-3">Delete Category</h2>
+    <div class="alert alert-warning">
+        Are you sure you want to delete the category
+        <strong>@Model.Category.Name</strong>?
+    </div>
+
+    <form method="post" class="d-flex gap-2">
+        <button type="submit" class="btn btn-danger">
+            <i class="bi bi-trash"></i> Delete
+        </button>
+        <a asp-page="Index" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>

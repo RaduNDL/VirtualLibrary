@@ -1,0 +1,21 @@
+﻿@page
+@model VirtualLibrary.Pages.Products.ImportModel
+@{
+    ViewData["Title"] = "Import Books";
+}
+
+<h1>Import Books</h1>
+<form method="post" class="row g-3">
+    <div class="col-md-6">
+        <label class="form-label">Subject (ex: fiction, history, computers)</label>
+        <input asp-for="Subject" class="form-control" />
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Count</label>
+        <input asp-for="Count" type="number" min="1" max="400" class="form-control" />
+    </div>
+    <div class="col-12">
+        <button class="btn btn-primary">Import</button>
+        <a asp-page="./Index" class="btn btn-secondary">Back</a>
+    </div>
+</form>

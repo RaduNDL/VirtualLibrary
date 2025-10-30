@@ -1,0 +1,45 @@
+﻿@page "{id:int}"
+@model VirtualLibrary.Pages.Products.DetailsModel
+@{
+    ViewData["Title"] = Model.Product.Title;
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+}
+
+<div class="row">
+    <div class="col-md-4">
+        <img src="~/@Model.Product.ImagePath" alt="@Model.Product.Title" class="img-fluid rounded border"
+             asp-append-version="true"
+             onerror="this.src='/images/no-cover.svg';this.onerror=null;" />
+    </div>
+
+    <div class="col-md-8">
+        <h1>@Model.Product.Title</h1>
+
+        @if (!string.IsNullOrWhiteSpace(Model.Product.Author))
+        {
+            <p class="text-muted mb-1">@Model.Product.Author</p>
+        }
+
+        @if (Model.Product.Stock > 0)
+        {
+            <p><span class="badge bg-success">In stock: @Model.Product.Stock</span></p>
+        }
+        else
+        {
+            <p><span class="badge bg-danger">Out of stock</span></p>
+        }
+
+        <p><strong>ISBN:</strong> @Model.Product.Isbn</p>
+        <p><strong>Category:</strong> @Model.Product.Category?.Name</p>
+
+        <p><strong>Supplier:</strong> @(Model.Product.Supplier?.Name ?? "—")</p>
+
+        <p class="lead">@Model.Product.Description</p>
+
+        <p class="h5">Price: @Model.Product.Price.ToString("0.00") RON</p>
+
+        <a href="@Model.SafeReturnUrl" class="btn btn-outline-secondary mt-2">
+            Back
+        </a>
+    </div>
+</div>

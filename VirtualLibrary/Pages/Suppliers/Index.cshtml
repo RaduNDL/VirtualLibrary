@@ -1,0 +1,39 @@
+﻿@page
+@model VirtualLibrary.Pages.Suppliers.IndexModel
+@{
+    ViewData["Title"] = "Suppliers";
+}
+<h1>Suppliers</h1>
+<p>
+    <a asp-page="Create" class="btn btn-primary">Add Supplier</a>
+</p>
+
+@if (!string.IsNullOrEmpty(Model.StatusMessage))
+{
+    <div class="alert alert-info">@Model.StatusMessage</div>
+}
+
+<table class="table table-striped align-middle">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Contact</th>
+            <th>Address</th>
+            <th class="text-end">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var s in Model.Suppliers)
+        {
+            <tr>
+                <td>@s.Name</td>
+                <td>@s.ContactInfo</td>
+                <td>@s.Address</td>
+                <td class="text-end">
+                    <a asp-page="Edit" asp-route-id="@s.SupplierId" class="btn btn-sm btn-outline-secondary">Edit</a>
+                    <a asp-page="Delete" asp-route-id="@s.SupplierId" class="btn btn-sm btn-outline-danger">Delete</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
