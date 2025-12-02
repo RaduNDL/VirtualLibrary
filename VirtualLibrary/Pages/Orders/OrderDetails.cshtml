@@ -1,0 +1,44 @@
+﻿@page "{id:int}"
+@model VirtualLibrary.Pages.Orders.OrderDetailsModel
+@{
+    ViewData["Title"] = "Order Details";
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+}
+
+<div class="container mt-4">
+
+    <h2 class="text-primary mb-3">Order Details</h2>
+
+    <div class="card p-3 mb-4">
+        <p><strong>Order #:</strong> @Model.Order.OrderId</p>
+        <p><strong>Date:</strong> @Model.Order.OrderDate</p>
+        <p><strong>Status:</strong> @Model.Order.Status</p>
+        <p><strong>Total:</strong> <span class="text-success fw-bold">@Model.Order.TotalAmount.ToString("0.00") RON</span></p>
+    </div>
+
+    <h4>Items</h4>
+
+    <table class="table table-bordered align-middle mt-3">
+        <thead class="table-light">
+            <tr>
+                <th>Product</th>
+                <th>Price</th>
+                <th>Quantity</th>
+                <th>Subtotal</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            @foreach (var item in Model.Order.Items)
+            {
+                <tr>
+                    <td>@item.Product.Title</td>
+                    <td>@item.Price.ToString("0.00")</td>
+                    <td>@item.Quantity</td>
+                    <td>@(item.Price* item.Quantity).ToString("0.00")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+</div>

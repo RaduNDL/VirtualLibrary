@@ -14,7 +14,7 @@ namespace VirtualLibrary.Models
         public string UserId { get; set; }
 
         [ForeignKey("UserId")]
-        public IdentityUser User { get; set; }  
+        public IdentityUser User { get; set; }
 
         public DateTime OrderDate { get; set; } = DateTime.Now;
 
@@ -26,4 +26,5 @@ namespace VirtualLibrary.Models
 
         public ICollection<OrderItem> Items { get; set; } = new List<OrderItem>();
     }
+
 }

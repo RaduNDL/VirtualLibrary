@@ -1,0 +1,44 @@
+﻿@page
+@model VirtualLibrary.Pages.Favorites.IndexModel
+@{
+    ViewData["Title"] = "My Wishlist";
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+}
+
+<div class="container mt-4">
+    <h2 class="text-primary mb-3">My Wishlist</h2>
+
+    @if (Model.Favorites == null || !Model.Favorites.Any())
+    {
+        <div class="alert alert-info">You have no items in your wishlist.</div>
+    }
+    else
+    {
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Product</th>
+                    <th>Price</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.Favorites)
+                {
+                    <tr>
+                        <td class="fw-semibold">@item.Product.Title</td>
+                        <td>@item.Product.Price.ToString("0.00") RON</td>
+                        <td>
+                            <form method="post" asp-page-handler="Remove">
+                                <input type="hidden" name="productId" value="@item.ProductId" />
+                                <button type="submit" class="btn btn-sm btn-danger">
+                                    <i class="bi bi-x-circle"></i> Remove
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
