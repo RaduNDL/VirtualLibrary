@@ -2,7 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using VirtualLibrary.Data;
 using Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore;
-using VirtualLibrary.Services; 
+using VirtualLibrary.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -39,8 +39,11 @@ builder.Services.AddRazorPages()
 #endif
     ;
 
-builder.Services.AddHttpClient();              
-builder.Services.AddScoped<BookImporter>();    
+builder.Services.AddHttpClient();
+builder.Services.AddHttpClient<PdfService>();
+builder.Services.AddScoped<BookImporter>();
+builder.Services.AddScoped<AudiobookService>();
+builder.Services.AddScoped<PdfService>();
 
 var app = builder.Build();
 
@@ -52,11 +55,12 @@ using (var scope = app.Services.CreateScope())
     try
     {
         var db = services.GetRequiredService<AppDbContext>();
-        await db.Database.MigrateAsync(); 
+        await db.Database.MigrateAsync();
 
         var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
         var userManager = services.GetRequiredService<UserManager<IdentityUser>>();
 
+        // Create Roles
         string[] roleNames = { "Administrator", "Client" };
         foreach (var roleName in roleNames)
         {
@@ -68,44 +72,42 @@ using (var scope = app.Services.CreateScope())
             }
         }
 
-        var adminEmail = "admin@gmail.com";
-        var adminPassword = "Admin123!";
+        const string adminEmail = "admin@gmail.com";
+        const string adminPassword = "Admin123!";
 
         var adminUser = await userManager.FindByEmailAsync(adminEmail);
         if (adminUser == null)
         {
-            adminUser = new IdentityUser
+            var newAdminUser = new IdentityUser
             {
                 UserName = adminEmail,
                 Email = adminEmail,
                 EmailConfirmed = true
             };
 
-            var createResult = await userManager.CreateAsync(adminUser, adminPassword);
-            if (createResult.Succeeded)
+            var result = await userManager.CreateAsync(newAdminUser, adminPassword);
+            if (result.Succeeded)
             {
-                var addRoleResult = await userManager.AddToRoleAsync(adminUser, "Administrator");
-                if (!addRoleResult.Succeeded)
-                    logger.LogWarning("AddToRole failed for admin: {Errors}", string.Join(", ", addRoleResult.Errors.Select(e => e.Description)));
+                await userManager.AddToRoleAsync(newAdminUser, "Administrator");
+                logger.LogInformation("Admin user created successfully. Email: {Email}, Password: {Password}", adminEmail, adminPassword);
             }
             else
             {
-                logger.LogWarning("Admin create failed: {Errors}", string.Join(", ", createResult.Errors.Select(e => e.Description)));
+                logger.LogWarning("Admin user creation failed: {Errors}", string.Join(", ", result.Errors.Select(e => e.Description)));
             }
+        }
+        else
+        {
+            logger.LogInformation("Admin user already exists. Email: {Email}", adminEmail);
         }
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"Migration/seed error: {ex}");
+        logger.LogError(ex, "An error occurred during seeding the database.");
     }
 }
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseDeveloperExceptionPage();
-    app.UseMigrationsEndPoint(); 
-}
-else
+if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error");
     app.UseHsts();
@@ -113,6 +115,15 @@ else
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
+
+var audioBooks = Path.Combine(app.Environment.WebRootPath, "audiobooks");
+var pdfs = Path.Combine(app.Environment.WebRootPath, "pdfs");
+
+if (!Directory.Exists(audioBooks))
+    Directory.CreateDirectory(audioBooks);
+
+if (!Directory.Exists(pdfs))
+    Directory.CreateDirectory(pdfs);
 
 app.UseRouting();
 

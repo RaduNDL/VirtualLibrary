@@ -5,6 +5,7 @@ namespace VirtualLibrary.Models
 {
     public class Product
     {
+        [Key]
         public int Id { get; set; }
 
         [Required, StringLength(200)]
@@ -31,16 +32,31 @@ namespace VirtualLibrary.Models
         [Display(Name = "Stock")]
         public int Stock { get; set; }
 
+        [StringLength(500)]
+        [Display(Name = "Image Path")]
+        public string? ImagePath { get; set; }
+
+        [StringLength(500)]
+        [Display(Name = "PDF File Path")]
+        public string? PdfFilePath { get; set; }
+
+        [StringLength(50)]
+        [Display(Name = "PDF Source")]
+        public string? PdfSource { get; set; } 
+
         public int? CategoryId { get; set; }
         public Category? Category { get; set; }
 
         public int? SupplierId { get; set; }
         public Supplier? Supplier { get; set; }
 
-        [Display(Name = "Cover")]
-        public string? ImagePath { get; set; }
-
+        [Display(Name = "Created At")]
         public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+
+        [Display(Name = "Updated At")]
         public DateTime? UpdatedAtUtc { get; set; }
+
+        [NotMapped]
+        public bool HasPdfAvailable => !string.IsNullOrWhiteSpace(PdfFilePath);
     }
 }

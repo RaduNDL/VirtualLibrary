@@ -12,8 +12,8 @@ using VirtualLibrary.Data;
 namespace VirtualLibrary.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251117093927_BillingMethod")]
-    partial class BillingMethod
+    [Migration("20260304065401_AudioBook")]
+    partial class AudioBook
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -247,6 +247,48 @@ namespace VirtualLibrary.Migrations
                     b.ToTable("ApplicationUsers");
                 });
 
+            modelBuilder.Entity("VirtualLibrary.Models.Audiobook", b =>
+                {
+                    b.Property<int>("AudiobookId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("AudiobookId"));
+
+                    b.Property<string>("AudioFilePath")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime?>("CompletedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<TimeSpan?>("Duration")
+                        .HasColumnType("time");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasDefaultValue("Pending");
+
+                    b.HasKey("AudiobookId");
+
+                    b.HasIndex("ProductId");
+
+                    b.ToTable("Audiobooks");
+                });
+
             modelBuilder.Entity("VirtualLibrary.Models.CartItem", b =>
                 {
                     b.Property<int>("CartItemId")
@@ -410,11 +452,20 @@ namespace VirtualLibrary.Migrations
                         .HasColumnType("nvarchar(4000)");
 
                     b.Property<string>("ImagePath")
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<string>("Isbn")
                         .HasMaxLength(13)
                         .HasColumnType("nvarchar(13)");
+
+                    b.Property<string>("PdfFilePath")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("PdfSource")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<decimal>("Price")
                         .HasPrecision(18, 2)
@@ -527,6 +578,17 @@ namespace VirtualLibrary.Migrations
                         .HasForeignKey("VirtualLibrary.Models.ApplicationUser", "IdentityUserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("VirtualLibrary.Models.Audiobook", b =>
+                {
+                    b.HasOne("VirtualLibrary.Models.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
                 });
 
             modelBuilder.Entity("VirtualLibrary.Models.CartItem", b =>
