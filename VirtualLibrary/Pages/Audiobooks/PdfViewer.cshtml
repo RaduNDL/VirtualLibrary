@@ -2,16 +2,18 @@
 @model VirtualLibrary.Pages.Audiobooks.PdfViewerModel
 @{
     ViewData["Title"] = "PDF Viewer - " + Model.Product?.Title;
+    Layout = "~/Pages/Shared/_Layout.cshtml";
 }
 
-<div class="d-flex vh-100" style="margin-top: -70px; padding-top: 70px;">
-    <!-- PDF Display Section -->
+<link rel="stylesheet" href="~/css/audiobook-player.css" asp-append-version="true" />
+
+<div class="d-flex vh-100 pdf-layout">
+
     <div class="flex-grow-1 bg-light p-3 overflow-auto" id="pdfContainer">
         @if (Model.Product?.HasPdfAvailable == true)
         {
             <iframe src="~/@Model.Product.PdfFilePath"
-                    class="w-100 h-100 border rounded"
-                    style="border: none;"></iframe>
+                    class="w-100 h-100 border rounded pdf-iframe"></iframe>
         }
         else
         {
@@ -28,89 +30,48 @@
         }
     </div>
 
-    <!-- Audio Player Section -->
-    @if (Model.Audiobook?.Status == "Completed")
-    {
-        <div class="bg-white border-start p-4 overflow-auto" style="width: 350px;">
-            <div class="mb-3">
-                <a href="@Url.Page("/Audiobooks/Index")" class="btn btn-outline-secondary w-100 btn-sm">
-                    <i class="bi bi-arrow-left"></i> Back
-                </a>
-            </div>
+    <div class="ab-panel bg-white border-start overflow-auto pdf-side-panel">
+        <div class="p-3">
+            <a href="@Url.Page("/Audiobooks/Index")" class="btn btn-outline-secondary w-100 btn-sm mb-3">
+                <i class="bi bi-arrow-left"></i> Back
+            </a>
 
-            <h6 class="fw-bold mb-3 pb-2 border-bottom">🎧 Audio Player</h6>
-
-            <div class="text-center mb-4 p-3 bg-light rounded">
+            <div class="text-center mb-3 p-3 bg-light rounded">
                 <img src="~/@Model.Product?.ImagePath"
                      alt="@Model.Product?.Title"
-                     class="img-thumbnail mb-2"
-                     style="width: 100px; height: 150px; object-fit: cover;"
+                     class="img-thumbnail mb-2 pdf-cover-img"
                      onerror="this.src='/images/no-cover.svg'" />
-                <div class="fw-bold mb-1 small">@Model.Product?.Title</div>
+                <div class="fw-bold small">@Model.Product?.Title</div>
                 <small class="text-muted">@(Model.Product?.Author ?? "Unknown")</small>
             </div>
 
-            <div>
-                <audio id="audioPlayer" class="w-100 mb-3" controls>
-                    <source src="~/@Model.Audiobook.AudioFilePath" type="audio/mpeg" />
-                    Your browser does not support the audio element.
-                </audio>
-
-                <div class="d-flex justify-content-between small text-muted mb-2">
-                    <span id="currentTime">0:00</span>
-                    <span id="duration">0:00</span>
-                </div>
-
-                <div id="progressBar" class="mb-3 bg-light rounded"
-                     style="height: 6px; cursor: pointer; overflow: hidden;">
-                    <div id="progressFill" class="bg-primary h-100 rounded" style="width: 0%;"></div>
-                </div>
-
-                <div class="d-flex gap-2">
-                    <button class="btn btn-sm btn-primary flex-grow-1" id="playPauseBtn">
-                        <i class="bi bi-play-fill"></i> Play
-                    </button>
-                    <button class="btn btn-sm btn-outline-secondary" id="muteBtn">
-                        <i class="bi bi-volume-up"></i>
-                    </button>
-                </div>
-
-                @if (Model.Audiobook.Duration.HasValue)
-                {
-                    <div class="text-center mt-3">
-                        <small class="text-muted">
-                            <i class="bi bi-clock"></i> Duration: @Model.Audiobook.Duration?.ToString(@"hh\:mm\:ss")
-                        </small>
+            @if (Model.Audiobook?.Status == "Completed")
+            {
+                <div class="ab-section mb-3">
+                    <h6 class="fw-bold mb-2 pb-1 border-bottom">🎧 MP3 Audio</h6>
+                    <audio id="audioPlayer" class="w-100 mb-2" controls>
+                        <source src="~/@Model.Audiobook.AudioFilePath" type="audio/mpeg" />
+                    </audio>
+                    <div class="d-flex justify-content-between small text-muted mb-1">
+                        <span id="currentTime">0:00</span>
+                        <span id="duration">0:00</span>
                     </div>
-                }
-            </div>
-
-            <div class="mt-4 pt-3 border-top">
-                <h6 class="text-primary mb-2">💡 How to Use</h6>
-                <small class="text-muted d-block">
-                    Play the audiobook while reading the PDF to verify the audio matches the text.
-                </small>
-            </div>
+                    <div id="progressBar" class="mb-2 bg-light rounded progress-bar-track">
+                        <div id="progressFill" class="bg-primary h-100 rounded progress-bar-fill"></div>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-sm btn-primary flex-grow-1" id="playPauseBtn">
+                            <i class="bi bi-play-fill"></i> Play
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary" id="muteBtn">
+                            <i class="bi bi-volume-up"></i>
+                        </button>
+                    </div>
+                </div>
+            }
         </div>
-    }
-    else
-    {
-        <div class="bg-white border-start p-4 overflow-auto" style="width: 350px;">
-            <div class="mb-3">
-                <a href="@Url.Page("/Audiobooks/Index")" class="btn btn-outline-secondary w-100 btn-sm">
-                    <i class="bi bi-arrow-left"></i> Back
-                </a>
-            </div>
-            <div class="alert alert-info" role="alert">
-                <i class="bi bi-info-circle"></i>
-                <strong>No Audiobook Generated</strong>
-                <p class="mb-2 mt-2">Generate an audiobook first to listen while reading.</p>
-                <a href="@Url.Page("/Audiobooks/Index")" class="btn btn-sm btn-primary w-100">
-                    Generate Audiobook
-                </a>
-            </div>
-        </div>
-    }
+    </div>
 </div>
 
 <script src="~/js/pdf-viewer.js"></script>
+<script src="~/js/manage-pdf.js"></script>

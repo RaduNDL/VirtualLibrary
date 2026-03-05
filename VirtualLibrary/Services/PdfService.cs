@@ -1,7 +1,9 @@
 ﻿using System.Net.Http;
+using System.Text;
 using System.Text.Json;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using UglyToad.PdfPig;
 using VirtualLibrary.Data;
 using VirtualLibrary.Models;
 
@@ -24,6 +26,27 @@ namespace VirtualLibrary.Services
             _db = db;
             _env = env;
             _logger = logger;
+        }
+
+        public Task<string> ExtractTextAsync(string absolutePdfPath)
+        {
+            if (!File.Exists(absolutePdfPath))
+                return Task.FromResult(string.Empty);
+
+            try
+            {
+                var sb = new StringBuilder();
+                using var doc = PdfDocument.Open(absolutePdfPath);
+                foreach (var page in doc.GetPages())
+                    sb.AppendLine(page.Text);
+
+                return Task.FromResult(sb.ToString());
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error extracting PDF text: {ex.Message}");
+                return Task.FromResult(string.Empty);
+            }
         }
 
         public async Task<string?> SearchOpenLibraryPdfAsync(string? isbn, string title, string author)
@@ -121,8 +144,6 @@ namespace VirtualLibrary.Services
                     return null;
                 }
 
-                // ✅ Verificare mai permisiva: acceptam si application/octet-stream
-                // si verificam extensia fisierului
                 var allowedContentTypes = new[]
                 {
                     "application/pdf",
@@ -145,7 +166,6 @@ namespace VirtualLibrary.Services
                     return null;
                 }
 
-                // Verificare marime: max 100 MB
                 if (pdfFile.Length > 100 * 1024 * 1024)
                 {
                     _logger.LogWarning($"PDF file too large: {pdfFile.Length} bytes");

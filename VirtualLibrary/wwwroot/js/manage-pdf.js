@@ -4,9 +4,7 @@
 
     if (!uploadArea || !fileInput) return;
 
-    // Click pe zona de upload (dar NU pe butonul de submit)
     uploadArea.addEventListener('click', function (e) {
-        // Previne propagarea daca se da click pe input-ul de file direct
         if (e.target === fileInput) return;
         fileInput.click();
     });
@@ -44,9 +42,9 @@
             const file = fileInput.files[0];
             const sizeMB = (file.size / 1024 / 1024).toFixed(2);
             uploadArea.innerHTML = `
-                <i class='bx bxs-check-circle' style="font-size: 2em; color: #28a745;"></i>
-                <strong style="display:block; margin-top: 10px;">${file.name}</strong>
-                <span style="color: #6c757d; font-size: 0.85em;">${sizeMB} MB — Ready to upload</span>
+                <i class="bx bxs-check-circle upload-success-icon"></i>
+                <strong class="upload-file-name">${file.name}</strong>
+                <span class="upload-file-size">${sizeMB} MB — Ready to upload</span>
             `;
         }
     }
