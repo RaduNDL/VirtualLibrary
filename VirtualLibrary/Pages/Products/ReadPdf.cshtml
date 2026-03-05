@@ -1,0 +1,56 @@
+﻿@page "{id:int}"
+@model VirtualLibrary.Pages.Products.ReadPdfModel
+@{
+    ViewData["Title"] = $"Citeste: {Model.Product?.Title}";
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+}
+
+<link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+<link rel="stylesheet" href="~/css/ReadPdf.css">
+
+<div class="reader-wrapper">
+    <header class="reader-header">
+        <a asp-page="./Details" asp-route-id="@Model.Product!.Id" class="back-link">
+            <i class='bx bx-left-arrow-alt'></i> Inapoi la carte
+        </a>
+        <h2><i class='bx bxs-file-pdf'></i> @Model.Product!.Title</h2>
+        @if (!string.IsNullOrWhiteSpace(Model.Product.Author))
+        {
+            <span class="author-sub">de @Model.Product.Author</span>
+        }
+    </header>
+
+    @if (Model.Product.HasPdfAvailable)
+    {
+        <div class="pdf-viewer-container">
+            <iframe src="/@Model.Product.PdfFilePath"
+                    class="pdf-iframe"
+                    title="@Model.Product.Title"
+                    allowfullscreen>
+                <p>
+                    Browserul tau nu suporta iframe-uri PDF.
+                    <a href="/@Model.Product.PdfFilePath" target="_blank">Descarca PDF-ul</a>.
+                </p>
+            </iframe>
+        </div>
+        <div class="pdf-actions-bar">
+            <a href="/@Model.Product.PdfFilePath" target="_blank" class="btn-download">
+                <i class='bx bx-download'></i> Descarca PDF
+            </a>
+            <a href="/@Model.Product.PdfFilePath" target="_blank" class="btn-fullscreen">
+                <i class='bx bx-fullscreen'></i> Deschide in tab nou
+            </a>
+        </div>
+    }
+    else
+    {
+        <div class="no-pdf-box">
+            <i class='bx bx-error-circle'></i>
+            <h3>PDF indisponibil</h3>
+            <p>Aceasta carte nu are inca un PDF asociat.</p>
+            <a asp-page="./Details" asp-route-id="@Model.Product!.Id" class="btn-back">
+                Inapoi la detalii
+            </a>
+        </div>
+    }
+</div>

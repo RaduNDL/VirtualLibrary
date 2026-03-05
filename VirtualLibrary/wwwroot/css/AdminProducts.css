@@ -801,3 +801,20 @@
     .drag-drop-area:hover {
         background: #eef2ff;
     }
+.btn-action-success {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1.2rem;
+    background: #28a745;
+    color: #fff;
+    border-radius: 6px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background 0.2s;
+}
+
+    .btn-action-success:hover {
+        background: #218838;
+        color: #fff;
+    }

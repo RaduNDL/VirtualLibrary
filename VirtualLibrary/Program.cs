@@ -34,15 +34,14 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.AccessDeniedPath = "/Identity/Account/AccessDenied";
 });
 
-// ✅ Permite upload fisiere mari pana la 100 MB
 builder.Services.Configure<FormOptions>(options =>
 {
-    options.MultipartBodyLengthLimit = 104857600; // 100 MB
+    options.MultipartBodyLengthLimit = 104857600; 
 });
 
 builder.WebHost.ConfigureKestrel(options =>
 {
-    options.Limits.MaxRequestBodySize = 104857600; // 100 MB
+    options.Limits.MaxRequestBodySize = 104857600;
 });
 
 builder.Services.AddRazorPages()
@@ -72,7 +71,6 @@ using (var scope = app.Services.CreateScope())
         var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
         var userManager = services.GetRequiredService<UserManager<IdentityUser>>();
 
-        // Create Roles
         string[] roleNames = { "Administrator", "Client" };
         foreach (var roleName in roleNames)
         {
@@ -127,8 +125,6 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
-
-// ✅ Creare directoare necesare la startup
 var audioBooks = Path.Combine(app.Environment.WebRootPath, "audiobooks");
 var pdfs = Path.Combine(app.Environment.WebRootPath, "pdfs");
 var uploads = Path.Combine(app.Environment.WebRootPath, "uploads", "books");

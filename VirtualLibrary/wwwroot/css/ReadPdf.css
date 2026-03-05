@@ -1,0 +1,123 @@
+﻿.reader-wrapper {
+    max-width: 1100px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+
+.reader-header {
+    margin-bottom: 1.5rem;
+}
+
+    .reader-header h2 {
+        font-size: 1.6rem;
+        font-weight: 700;
+        margin: 0.5rem 0 0.2rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+.author-sub {
+    color: #6c757d;
+    font-size: 1rem;
+}
+
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    color: #4e73df;
+    text-decoration: none;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+
+    .back-link:hover {
+        text-decoration: underline;
+    }
+
+.pdf-viewer-container {
+    border: 1px solid #dee2e6;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    background: #f8f9fa;
+}
+
+.pdf-iframe {
+    width: 100%;
+    height: 80vh;
+    border: none;
+    display: block;
+}
+
+.pdf-actions-bar {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+    flex-wrap: wrap;
+}
+
+.btn-download, .btn-fullscreen {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1.2rem;
+    border-radius: 6px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background 0.2s;
+}
+
+.btn-download {
+    background: #28a745;
+    color: #fff;
+}
+
+    .btn-download:hover {
+        background: #218838;
+        color: #fff;
+    }
+
+.btn-fullscreen {
+    background: #4e73df;
+    color: #fff;
+}
+
+    .btn-fullscreen:hover {
+        background: #3756c0;
+        color: #fff;
+    }
+
+.no-pdf-box {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: #fff3cd;
+    border-radius: 10px;
+    border: 1px solid #ffc107;
+}
+
+    .no-pdf-box i {
+        font-size: 3rem;
+        color: #ffc107;
+    }
+
+    .no-pdf-box h3 {
+        margin: 1rem 0 0.5rem;
+    }
+
+.btn-back {
+    display: inline-block;
+    margin-top: 1rem;
+    padding: 0.5rem 1.4rem;
+    background: #6c757d;
+    color: #fff;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+    .btn-back:hover {
+        background: #5a6268;
+        color: #fff;
+    }
