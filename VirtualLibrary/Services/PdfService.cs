@@ -1,5 +1,6 @@
 ﻿using System.Net.Http;
 using System.Text.Json;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using VirtualLibrary.Data;
 using VirtualLibrary.Models;
@@ -25,7 +26,7 @@ namespace VirtualLibrary.Services
             _logger = logger;
         }
 
-        public async Task<string?> SearchOpenLibraryPdfAsync(string isbn, string title, string author)
+        public async Task<string?> SearchOpenLibraryPdfAsync(string? isbn, string title, string author)
         {
             try
             {
@@ -115,17 +116,39 @@ namespace VirtualLibrary.Services
             try
             {
                 if (pdfFile == null || pdfFile.Length == 0)
-                    return null;
-
-                if (pdfFile.ContentType != "application/pdf")
                 {
-                    _logger.LogWarning("Invalid file type uploaded");
+                    _logger.LogWarning("Upload attempted with null or empty file");
                     return null;
                 }
 
+                // ✅ Verificare mai permisiva: acceptam si application/octet-stream
+                // si verificam extensia fisierului
+                var allowedContentTypes = new[]
+                {
+                    "application/pdf",
+                    "application/octet-stream",
+                    "application/force-download",
+                    "binary/octet-stream"
+                };
+
+                var extension = Path.GetExtension(pdfFile.FileName)?.ToLowerInvariant();
+
+                if (extension != ".pdf")
+                {
+                    _logger.LogWarning($"Invalid file extension: {extension}");
+                    return null;
+                }
+
+                if (!allowedContentTypes.Contains(pdfFile.ContentType?.ToLowerInvariant()))
+                {
+                    _logger.LogWarning($"Invalid content type: {pdfFile.ContentType}");
+                    return null;
+                }
+
+                // Verificare marime: max 100 MB
                 if (pdfFile.Length > 100 * 1024 * 1024)
                 {
-                    _logger.LogWarning("PDF file too large");
+                    _logger.LogWarning($"PDF file too large: {pdfFile.Length} bytes");
                     return null;
                 }
 
@@ -141,7 +164,7 @@ namespace VirtualLibrary.Services
                     await pdfFile.CopyToAsync(stream);
                 }
 
-                _logger.LogInformation($"PDF uploaded: {filePath}");
+                _logger.LogInformation($"PDF uploaded successfully: {filePath}");
                 return Path.Combine("pdfs", fileName).Replace('\\', '/');
             }
             catch (Exception ex)

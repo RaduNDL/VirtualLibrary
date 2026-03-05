@@ -35,6 +35,7 @@
                         <i class='bx bx-phone-call'></i>
                         <input asp-for="Supplier.ContactInfo" />
                     </div>
+                    <span asp-validation-for="Supplier.ContactInfo" class="text-error"></span>
                 </div>
 
                 <div class="input-group-modern">
@@ -43,6 +44,7 @@
                         <i class='bx bx-map'></i>
                         <input asp-for="Supplier.Address" />
                     </div>
+                    <span asp-validation-for="Supplier.Address" class="text-error"></span>
                 </div>
 
                 <div class="form-actions mt-4">

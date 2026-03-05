@@ -26,7 +26,18 @@ namespace VirtualLibrary.Pages.Suppliers
 
         public async Task<IActionResult> OnPostAsync()
         {
-            if (!ModelState.IsValid) return Page();
+            if (!ModelState.IsValid)
+                return Page();
+
+            // Verificare duplicat - exclude furnizorul curent
+            bool exists = _context.Suppliers.Any(s =>
+                s.Name.ToLower() == Supplier.Name.ToLower() &&
+                s.SupplierId != Supplier.SupplierId);
+            if (exists)
+            {
+                ModelState.AddModelError("Supplier.Name", "A supplier with this name already exists.");
+                return Page();
+            }
 
             var db = await _context.Suppliers.FirstOrDefaultAsync(x => x.SupplierId == Supplier.SupplierId);
             if (db is null) return NotFound();

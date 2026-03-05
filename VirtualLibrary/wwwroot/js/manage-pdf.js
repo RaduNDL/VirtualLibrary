@@ -4,25 +4,29 @@
 
     if (!uploadArea || !fileInput) return;
 
-    uploadArea.addEventListener('click', function () {
+    // Click pe zona de upload (dar NU pe butonul de submit)
+    uploadArea.addEventListener('click', function (e) {
+        // Previne propagarea daca se da click pe input-ul de file direct
+        if (e.target === fileInput) return;
         fileInput.click();
     });
 
     uploadArea.addEventListener('dragover', function (e) {
         e.preventDefault();
-        uploadArea.style.backgroundColor = '#e7f1ff';
-        uploadArea.style.borderColor = '#764ba2';
+        e.stopPropagation();
+        uploadArea.classList.add('drag-over');
     });
 
-    uploadArea.addEventListener('dragleave', function () {
-        uploadArea.style.backgroundColor = '#fff';
-        uploadArea.style.borderColor = '#0d6efd';
+    uploadArea.addEventListener('dragleave', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        uploadArea.classList.remove('drag-over');
     });
 
     uploadArea.addEventListener('drop', function (e) {
         e.preventDefault();
-        uploadArea.style.backgroundColor = '#fff';
-        uploadArea.style.borderColor = '#0d6efd';
+        e.stopPropagation();
+        uploadArea.classList.remove('drag-over');
 
         const files = e.dataTransfer.files;
         if (files.length > 0) {
@@ -36,14 +40,13 @@
     });
 
     function updateUploadAreaDisplay() {
-        if (fileInput.files.length > 0) {
-            const fileName = fileInput.files[0].name;
+        if (fileInput.files && fileInput.files.length > 0) {
+            const file = fileInput.files[0];
+            const sizeMB = (file.size / 1024 / 1024).toFixed(2);
             uploadArea.innerHTML = `
-                <i class="bi bi-check-circle text-success" style="font-size: 2em;"></i>
-                <p class="mt-3 mb-0">
-                    <strong>${fileName}</strong><br>
-                    <small class="text-muted">Ready to upload</small>
-                </p>
+                <i class='bx bxs-check-circle' style="font-size: 2em; color: #28a745;"></i>
+                <strong style="display:block; margin-top: 10px;">${file.name}</strong>
+                <span style="color: #6c757d; font-size: 0.85em;">${sizeMB} MB — Ready to upload</span>
             `;
         }
     }

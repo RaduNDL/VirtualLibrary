@@ -20,9 +20,7 @@ namespace VirtualLibrary.Pages.Audiobooks
             Product = await _context.Products.FirstOrDefaultAsync(p => p.Id == productId);
 
             if (Product == null)
-            {
                 return NotFound();
-            }
 
             Audiobook = await _context.Audiobooks
                 .FirstOrDefaultAsync(a => a.ProductId == productId && a.Status == "Completed");

@@ -7,7 +7,7 @@ namespace VirtualLibrary.Services
 {
     public class AudiobookService
     {
-        private readonly TextToSpeechClient _ttsClient;
+        private TextToSpeechClient? _ttsClient;
         private readonly AppDbContext _db;
         private readonly IWebHostEnvironment _env;
         private readonly IConfiguration _config;
@@ -23,16 +23,30 @@ namespace VirtualLibrary.Services
             _env = env;
             _config = config;
             _logger = logger;
+            // NU mai initializam TTS clientul in constructor!
+        }
 
-            try
+        private TextToSpeechClient GetTtsClient()
+        {
+            if (_ttsClient != null)
+                return _ttsClient;
+
+            var credentialsPath = _config["GoogleCloud:CredentialsPath"];
+
+            if (!string.IsNullOrWhiteSpace(credentialsPath) && File.Exists(credentialsPath))
             {
+                _ttsClient = new TextToSpeechClientBuilder
+                {
+                    CredentialsPath = credentialsPath
+                }.Build();
+            }
+            else
+            {
+                // Fallback: Application Default Credentials
                 _ttsClient = TextToSpeechClient.Create();
             }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error initializing TTS client: {ex.Message}");
-                throw;
-            }
+
+            return _ttsClient;
         }
 
         public async Task<Audiobook?> GenerateAudiobookAsync(int productId)
@@ -86,7 +100,6 @@ namespace VirtualLibrary.Services
                 }
 
                 var audioContent = await SynthesizeSpeechAsync(textToSpeak);
-
                 var audioFilePath = await SaveAudioFileAsync(productId, audioContent);
 
                 audiobook.AudioFilePath = audioFilePath;
@@ -117,7 +130,7 @@ namespace VirtualLibrary.Services
             }
         }
 
-        private string PrepareAudioText(Product product)
+        private static string PrepareAudioText(Product product)
         {
             var textParts = new List<string>();
 
@@ -137,6 +150,8 @@ namespace VirtualLibrary.Services
         {
             try
             {
+                var client = GetTtsClient();
+
                 var input = new SynthesisInput { Text = text };
 
                 var voice = new VoiceSelectionParams
@@ -152,7 +167,7 @@ namespace VirtualLibrary.Services
                     Pitch = double.Parse(_config["GoogleCloud:TextToSpeechSettings:Pitch"] ?? "0.0")
                 };
 
-                var response = await _ttsClient.SynthesizeSpeechAsync(input, voice, audioConfig);
+                var response = await client.SynthesizeSpeechAsync(input, voice, audioConfig);
                 return response.AudioContent.ToByteArray();
             }
             catch (Exception ex)

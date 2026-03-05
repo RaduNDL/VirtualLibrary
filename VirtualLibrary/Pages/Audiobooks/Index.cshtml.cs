@@ -71,17 +71,11 @@ namespace VirtualLibrary.Pages.Audiobooks
                 var audiobook = await _audiobookService.GenerateAudiobookAsync(productId);
 
                 if (audiobook?.Status == "Completed")
-                {
                     StatusMessage = $"✓ Audiobook ready for '{product.Title}'! You can now download it.";
-                }
                 else if (audiobook?.Status == "Failed")
-                {
                     StatusMessage = $"✗ Failed to generate audiobook: {audiobook.ErrorMessage}";
-                }
                 else if (audiobook?.Status == "Processing")
-                {
                     StatusMessage = $"⏳ Generating audiobook for '{product.Title}'... This may take a few minutes.";
-                }
             }
             catch (Exception ex)
             {

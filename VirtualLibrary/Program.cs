@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using VirtualLibrary.Data;
 using Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore;
@@ -31,6 +32,17 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.LoginPath = "/Identity/Account/Login";
     options.LogoutPath = "/Identity/Account/Logout";
     options.AccessDeniedPath = "/Identity/Account/AccessDenied";
+});
+
+// ✅ Permite upload fisiere mari pana la 100 MB
+builder.Services.Configure<FormOptions>(options =>
+{
+    options.MultipartBodyLengthLimit = 104857600; // 100 MB
+});
+
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.MaxRequestBodySize = 104857600; // 100 MB
 });
 
 builder.Services.AddRazorPages()
@@ -116,14 +128,19 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 
+// ✅ Creare directoare necesare la startup
 var audioBooks = Path.Combine(app.Environment.WebRootPath, "audiobooks");
 var pdfs = Path.Combine(app.Environment.WebRootPath, "pdfs");
+var uploads = Path.Combine(app.Environment.WebRootPath, "uploads", "books");
 
 if (!Directory.Exists(audioBooks))
     Directory.CreateDirectory(audioBooks);
 
 if (!Directory.Exists(pdfs))
     Directory.CreateDirectory(pdfs);
+
+if (!Directory.Exists(uploads))
+    Directory.CreateDirectory(uploads);
 
 app.UseRouting();
 

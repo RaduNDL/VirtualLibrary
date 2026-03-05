@@ -24,11 +24,15 @@ namespace VirtualLibrary.Services
             var imported = 0;
 
             var supplier = await _db.Suppliers.FirstOrDefaultAsync(s => s.Name == "Google Books")
-                           ?? new Supplier { Name = "Google Books", ContactInfo = "https://books.google.com" };
+                           ?? new Supplier
+                           {
+                               Name = "Google Books",
+                               ContactInfo = TrimLen("https://books.google.com", 500)
+                           };
             if (supplier.SupplierId == 0) _db.Suppliers.Add(supplier);
 
             var category = await _db.Categories.FirstOrDefaultAsync(c => c.Name == subject)
-                           ?? new Category { Name = subject };
+                           ?? new Category { Name = TrimLen(subject, 100) };
             if (category.CategoryId == 0) _db.Categories.Add(category);
 
             for (int start = 0; start < total; start += 40)
@@ -73,7 +77,7 @@ namespace VirtualLibrary.Services
                             await File.WriteAllBytesAsync(fullPath, bytes);
                             localCover = Path.Combine("uploads", "books", fileName).Replace('\\', '/');
                         }
-                        catch {  }
+                        catch { }
                     }
 
                     var product = new Product
@@ -82,7 +86,7 @@ namespace VirtualLibrary.Services
                         Author = vi.Authors != null ? TrimLen(string.Join(", ", vi.Authors), 200) : null,
                         Description = TrimLen(vi.Description, 4000),
                         Isbn = string.IsNullOrWhiteSpace(isbn13) ? null : TrimLen(isbn13, 13),
-                        Price = (decimal)(_rng.Next(25, 120) + _rng.NextDouble()), 
+                        Price = (decimal)(_rng.Next(25, 120) + _rng.NextDouble()),
                         Stock = _rng.Next(0, 50),
                         ImagePath = localCover,
                         Category = category,

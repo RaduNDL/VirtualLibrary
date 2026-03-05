@@ -53,7 +53,6 @@
             <small class="text-muted">Showing all @Model.Products.Count available books</small>
         </div>
 
-        <!-- Books List -->
         @foreach (var product in Model.Products)
         {
             var audiobook = Model.AudiobookStatus[product.Id];
@@ -63,7 +62,6 @@
             <div class="card mb-3 shadow-sm">
                 <div class="card-body">
                     <div class="row g-3">
-                        <!-- Book Cover -->
                         <div class="col-md-2 text-center">
                             <img src="~/@product.ImagePath"
                                  alt="@product.Title"
@@ -72,7 +70,6 @@
                                  onerror="this.src='/images/no-cover.svg'" />
                         </div>
 
-                        <!-- Book Info -->
                         <div class="col-md-10">
                             <h5 class="card-title mb-1">@product.Title</h5>
                             <p class="card-text text-muted mb-2">
@@ -103,7 +100,7 @@
                                     else if (audiobook.Status == "Processing")
                                     {
                                         <span class="badge bg-info">
-                                            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                            <span class="spinner-border spinner-border-sm me-2" role="status"></span>
                                             @audiobook.Status
                                         </span>
                                     }
@@ -144,15 +141,14 @@
                                 else if (isProcessing)
                                 {
                                     <button type="button" class="btn btn-sm btn-secondary" disabled>
-                                        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                        <span class="spinner-border spinner-border-sm me-2" role="status"></span>
                                         Generating...
                                     </button>
                                 }
                                 else if (isCompleted)
                                 {
                                     <a href="/Audiobooks/Index?handler=Download&audiobookId=@audiobook.AudiobookId"
-                                       class="btn btn-sm btn-success"
-                                       download>
+                                       class="btn btn-sm btn-success" download>
                                         <i class="bi bi-download"></i> Download MP3
                                     </a>
 

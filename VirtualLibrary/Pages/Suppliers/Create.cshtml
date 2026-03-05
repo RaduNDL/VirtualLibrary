@@ -32,8 +32,9 @@
                     <label asp-for="Supplier.ContactInfo"></label>
                     <div class="input-with-icon">
                         <i class='bx bx-phone-call'></i>
-                        <input asp-for="Supplier.ContactInfo" placeholder="Phone, Email, etc." />
+                        <input asp-for="Supplier.ContactInfo" placeholder="e.g. +40721000000" />
                     </div>
+                    <span asp-validation-for="Supplier.ContactInfo" class="text-error"></span>
                 </div>
 
                 <div class="input-group-modern">
@@ -42,6 +43,7 @@
                         <i class='bx bx-map'></i>
                         <input asp-for="Supplier.Address" placeholder="Physical Address" />
                     </div>
+                    <span asp-validation-for="Supplier.Address" class="text-error"></span>
                 </div>
 
                 <div class="form-actions mt-4">

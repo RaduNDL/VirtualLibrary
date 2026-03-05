@@ -38,11 +38,8 @@
                 </a>
             </div>
 
-            <h6 class="fw-bold mb-3 pb-2 border-bottom">
-                🎧 Audio Player
-            </h6>
+            <h6 class="fw-bold mb-3 pb-2 border-bottom">🎧 Audio Player</h6>
 
-            <!-- Book Info -->
             <div class="text-center mb-4 p-3 bg-light rounded">
                 <img src="~/@Model.Product?.ImagePath"
                      alt="@Model.Product?.Title"
@@ -53,29 +50,22 @@
                 <small class="text-muted">@(Model.Product?.Author ?? "Unknown")</small>
             </div>
 
-            <!-- Audio Controls -->
             <div>
                 <audio id="audioPlayer" class="w-100 mb-3" controls>
                     <source src="~/@Model.Audiobook.AudioFilePath" type="audio/mpeg" />
                     Your browser does not support the audio element.
                 </audio>
 
-                <!-- Time Display -->
                 <div class="d-flex justify-content-between small text-muted mb-2">
                     <span id="currentTime">0:00</span>
                     <span id="duration">0:00</span>
                 </div>
 
-                <!-- Progress Bar -->
-                <div id="progressBar"
-                     class="mb-3 bg-light rounded"
+                <div id="progressBar" class="mb-3 bg-light rounded"
                      style="height: 6px; cursor: pointer; overflow: hidden;">
-                    <div id="progressFill"
-                         class="bg-primary h-100 rounded"
-                         style="width: 0%;"></div>
+                    <div id="progressFill" class="bg-primary h-100 rounded" style="width: 0%;"></div>
                 </div>
 
-                <!-- Control Buttons -->
                 <div class="d-flex gap-2">
                     <button class="btn btn-sm btn-primary flex-grow-1" id="playPauseBtn">
                         <i class="bi bi-play-fill"></i> Play
@@ -85,7 +75,6 @@
                     </button>
                 </div>
 
-                <!-- Duration Info -->
                 @if (Model.Audiobook.Duration.HasValue)
                 {
                     <div class="text-center mt-3">
@@ -96,7 +85,6 @@
                 }
             </div>
 
-            <!-- Tip Section -->
             <div class="mt-4 pt-3 border-top">
                 <h6 class="text-primary mb-2">💡 How to Use</h6>
                 <small class="text-muted d-block">
@@ -113,7 +101,6 @@
                     <i class="bi bi-arrow-left"></i> Back
                 </a>
             </div>
-
             <div class="alert alert-info" role="alert">
                 <i class="bi bi-info-circle"></i>
                 <strong>No Audiobook Generated</strong>
