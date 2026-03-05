@@ -2,25 +2,47 @@
 @model VirtualLibrary.Pages.Suppliers.DeleteModel
 @{
     ViewData["Title"] = "Delete Supplier";
+    Layout = "~/Pages/Shared/_Layout.cshtml";
 }
-<h1>Delete Supplier</h1>
-<hr />
-@if (!string.IsNullOrEmpty(Model.ErrorMessage))
-{
-    <div class="alert alert-danger">@Model.ErrorMessage</div>
-}
-<div class="mb-3">
-    <strong>Name:</strong> @Model.Supplier?.Name
-</div>
-<div class="mb-3">
-    <strong>Contact:</strong> @Model.Supplier?.ContactInfo
-</div>
-<div class="mb-3">
-    <strong>Address:</strong> @Model.Supplier?.Address
-</div>
 
-<form method="post">
-    <input type="hidden" asp-for="Supplier!.SupplierId" />
-    <button type="submit" class="btn btn-danger">Confirm delete</button>
-    <a asp-page="Index" class="btn btn-secondary">Cancel</a>
-</form>
+<link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+<link rel="stylesheet" href="~/css/AdminSuppliers.css">
+
+<div class="mgmt-wrapper">
+    <div class="delete-confirmation-container">
+
+        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+        {
+            <div class="alert-error-modern mb-3">
+                <i class='bx bx-error'></i> @Model.ErrorMessage
+            </div>
+        }
+
+        <div class="delete-card">
+            <div class="delete-icon">
+                <i class='bx bx-store-alt'></i>
+            </div>
+            <h3>Remove Supplier?</h3>
+            <p>You are about to delete the supplier <strong>"@Model.Supplier?.Name"</strong>.</p>
+
+            <div class="details-preview mt-3">
+                <div class="preview-row">
+                    <span><i class='bx bx-phone'></i> Contact:</span>
+                    <strong>@Model.Supplier?.ContactInfo</strong>
+                </div>
+                <div class="preview-row">
+                    <span><i class='bx bx-map-pin'></i> Address:</span>
+                    <strong>@Model.Supplier?.Address</strong>
+                </div>
+            </div>
+
+            <form method="post" class="delete-form mt-4">
+                <input type="hidden" asp-for="Supplier!.SupplierId" />
+                <button type="submit" class="btn-confirm-delete">
+                    <i class='bx bx-trash'></i> Confirm Delete
+                </button>
+                <a asp-page="Index" class="btn-keep">Cancel</a>
+            </form>
+        </div>
+    </div>
+</div>

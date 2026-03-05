@@ -2,27 +2,58 @@
 @model VirtualLibrary.Pages.Suppliers.CreateModel
 @{
     ViewData["Title"] = "Add Supplier";
+    Layout = "~/Pages/Shared/_Layout.cshtml";
 }
-<h1>Add Supplier</h1>
-<hr />
-<form method="post">
-    <div asp-validation-summary="All" class="text-danger"></div>
-    <div class="mb-3">
-        <label asp-for="Supplier.Name" class="form-label"></label>
-        <input asp-for="Supplier.Name" class="form-control" />
-        <span asp-validation-for="Supplier.Name" class="text-danger"></span>
+
+<link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+<link rel="stylesheet" href="~/css/AdminSuppliers.css">
+
+<div class="mgmt-wrapper">
+    <div class="form-container">
+        <header class="mgmt-header">
+            <a asp-page="Index" class="back-link"><i class='bx bx-left-arrow-alt'></i> Back to Suppliers</a>
+            <h2 class="mt-2">Add New Supplier</h2>
+        </header>
+
+        <div class="form-card">
+            <form method="post">
+                <div asp-validation-summary="All" class="text-error-summary"></div>
+
+                <div class="input-group-modern">
+                    <label asp-for="Supplier.Name"></label>
+                    <div class="input-with-icon">
+                        <i class='bx bx-store'></i>
+                        <input asp-for="Supplier.Name" placeholder="Supplier Company Name" />
+                    </div>
+                    <span asp-validation-for="Supplier.Name" class="text-error"></span>
+                </div>
+
+                <div class="input-group-modern">
+                    <label asp-for="Supplier.ContactInfo"></label>
+                    <div class="input-with-icon">
+                        <i class='bx bx-phone-call'></i>
+                        <input asp-for="Supplier.ContactInfo" placeholder="Phone, Email, etc." />
+                    </div>
+                </div>
+
+                <div class="input-group-modern">
+                    <label asp-for="Supplier.Address"></label>
+                    <div class="input-with-icon">
+                        <i class='bx bx-map'></i>
+                        <input asp-for="Supplier.Address" placeholder="Physical Address" />
+                    </div>
+                </div>
+
+                <div class="form-actions mt-4">
+                    <button type="submit" class="btn-save">
+                        <i class='bx bx-save'></i> Save Supplier
+                    </button>
+                    <a asp-page="Index" class="btn-cancel">Cancel</a>
+                </div>
+            </form>
+        </div>
     </div>
-    <div class="mb-3">
-        <label asp-for="Supplier.ContactInfo" class="form-label"></label>
-        <input asp-for="Supplier.ContactInfo" class="form-control" />
-    </div>
-    <div class="mb-3">
-        <label asp-for="Supplier.Address" class="form-label"></label>
-        <input asp-for="Supplier.Address" class="form-control" />
-    </div>
-    <button type="submit" class="btn btn-primary">Save</button>
-    <a asp-page="Index" class="btn btn-secondary">Cancel</a>
-</form>
+</div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />

@@ -8,7 +8,7 @@ using VirtualLibrary.Services;
 
 namespace VirtualLibrary.Pages.Products
 {
-    [Authorize(Roles = "Administrator")]
+    [Authorize]
     public class ManagePdfModel : PageModel
     {
         private readonly AppDbContext _context;

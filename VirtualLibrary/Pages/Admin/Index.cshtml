@@ -1,22 +1,110 @@
 ﻿@page
 @model VirtualLibrary.Pages.Admin.IndexModel
 @{
-    ViewData["Title"] = "Admin Panel";
-    Layout = "~/Pages/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Admin Dashboard";
+    Layout = null;
 }
 
-<h1 class="mb-4 text-center">Administrator Panel</h1>
-
-<div class="card shadow-sm p-4">
-    <h4>Welcome, @User.Identity?.Name!</h4>
-    <p>From here you can manage the application’s content and users.</p>
-
-    <hr/>
-
-    <div class="list-group">
-        <a asp-page="/Products/Index" class="list-group-item list-group-item-action">Manage Products</a>
-        <a asp-page="/Categories/Index" class="list-group-item list-group-item-action">Manage Categories</a>
-        <a asp-page="/Suppliers/Index" class="list-group-item list-group-item-action">Manage Suppliers</a>
-        <a asp-page="/Orders/Index" class="list-group-item list-group-item-action">View Orders</a>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewData["Title"] - Virtual Library</title>
+    <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="~/css/AdminPanel.css">
+</head>
+<body>
+    <div class="sidebar">
+        <div class="logo-details">
+            <i class='bx bx-book-reader'></i>
+            <span class="logo_name">VirtualLibrary</span>
+        </div>
+        <ul class="nav-links">
+            <li>
+                <a href="#" class="active">
+                    <i class='bx bx-grid-alt'></i>
+                    <span class="links_name">Dashboard</span>
+                </a>
+            </li>
+            <li>
+                <a asp-page="/Products/Index">
+                    <i class='bx bx-box'></i>
+                    <span class="links_name">Products</span>
+                </a>
+            </li>
+            <li>
+                <a asp-page="/Categories/Index">
+                    <i class='bx bx-list-ul'></i>
+                    <span class="links_name">Categories</span>
+                </a>
+            </li>
+            <li>
+                <a asp-page="/Suppliers/Index">
+                    <i class='bx bx-store-alt'></i>
+                    <span class="links_name">Suppliers</span>
+                </a>
+            </li>
+            <li>
+                <a asp-page="/Orders/Index">
+                    <i class='bx bx-cart-alt'></i>
+                    <span class="links_name">Orders</span>
+                </a>
+            </li>
+            <li class="log_out">
+                <a asp-area="Identity" asp-page="/Account/Logout">
+                    <i class='bx bx-log-out'></i>
+                    <span class="links_name">Log out</span>
+                </a>
+            </li>
+        </ul>
     </div>
-</div>
+
+    <section class="home-section">
+        <nav>
+            <div class="sidebar-button">
+                <i class='bx bx-menu sidebarBtn'></i>
+                <span class="dashboard">Dashboard</span>
+            </div>
+            <div class="profile-details">
+                <span class="admin_name">@User.Identity?.Name</span>
+            </div>
+        </nav>
+
+        <div class="home-content">
+            <div class="overview-boxes">
+                <div class="box">
+                    <div class="right-side">
+                        <div class="box-topic">Total Orders</div>
+                        <div class="number">124</div>
+                    </div>
+                    <i class='bx bx-cart-alt cart'></i>
+                </div>
+                <div class="box">
+                    <div class="right-side">
+                        <div class="box-topic">Total Products</div>
+                        <div class="number">56</div>
+                    </div>
+                    <i class='bx bxs-book-alt cart two'></i>
+                </div>
+                <div class="box">
+                    <div class="right-side">
+                        <div class="box-topic">Total Categories</div>
+                        <div class="number">12</div>
+                    </div>
+                    <i class='bx bx-category cart three'></i>
+                </div>
+                <div class="box">
+                    <div class="right-side">
+                        <div class="box-topic">Total Suppliers</div>
+                        <div class="number">8</div>
+                    </div>
+                    <i class='bx bxs-truck cart four'></i>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script src="~/js/AdminPanel.js"></script>
+</body>
+</html>

@@ -1,48 +1,55 @@
 ﻿@page
 @model VirtualLibrary.Areas.Identity.Pages.Account.LoginModel
 @{
-    ViewData["Title"] = "Login";
+    ViewData["Title"] = "Log in";
     Layout = "~/Pages/Shared/_Layout.cshtml";
 }
 
-<div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-6 col-lg-5">
-            <div class="card shadow-lg border-0 rounded-4">
-                <div class="card-body p-4">
-                    <div class="text-center mb-4">
-                        <i class="bi bi-box-arrow-in-right display-5 text-primary"></i>
-                        <h2 class="fw-bold text-primary">Welcome Back</h2>
-                        <p class="text-muted">Login to your Virtual Library account</p>
+<link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+<link rel="stylesheet" href="~/css/Auth.css">
+
+<div class="auth-wrapper">
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header text-primary">
+                <i class='bx bx-user-circle'></i>
+                <h2>Welcome Back</h2>
+                <p>Login to your Virtual Library account</p>
+            </div>
+
+            <form method="post" class="auth-form" novalidate>
+                <div asp-validation-summary="ModelOnly" class="text-error-summary mb-3"></div>
+
+                <div class="input-group-modern">
+                    <label asp-for="Input.Email">Email Address</label>
+                    <div class="input-with-icon">
+                        <i class='bx bx-envelope'></i>
+                        <input asp-for="Input.Email" autocomplete="username" placeholder="name@example.com" />
                     </div>
-
-                    <form method="post" class="needs-validation" novalidate>
-                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
-
-                        <div class="form-floating mb-3">
-                            <input asp-for="Input.Email" class="form-control" autocomplete="username" placeholder="name@example.com" />
-                            <label asp-for="Input.Email">Email address</label>
-                            <span asp-validation-for="Input.Email" class="text-danger"></span>
-                        </div>
-
-                        <div class="form-floating mb-3">
-                            <input asp-for="Input.Password" class="form-control" type="password" autocomplete="current-password" placeholder="password" />
-                            <label asp-for="Input.Password">Password</label>
-                            <span asp-validation-for="Input.Password" class="text-danger"></span>
-                        </div>
-
-                        <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
-                            <i class="bi bi-box-arrow-in-right"></i> Log in
-                        </button>
-                    </form>
-
-                    <div class="text-center mt-4">
-                        <p class="text-muted mb-1">Don’t have an account?</p>
-                        <a asp-area="Identity" asp-page="/Account/Register" class="btn btn-outline-primary w-100 fw-semibold">
-                            <i class="bi bi-person-plus"></i> Create an Account
-                        </a>
-                    </div>
+                    <span asp-validation-for="Input.Email" class="text-error"></span>
                 </div>
+
+                <div class="input-group-modern">
+                    <label asp-for="Input.Password">Password</label>
+                    <div class="input-with-icon">
+                        <i class='bx bx-lock-alt'></i>
+                        <input asp-for="Input.Password" type="password" autocomplete="current-password" placeholder="••••••••" />
+                    </div>
+                    <span asp-validation-for="Input.Password" class="text-error"></span>
+                </div>
+
+                <div class="form-actions mt-4">
+                    <button type="submit" class="btn-auth-primary w-100">
+                        Log In <i class='bx bx-right-arrow-alt'></i>
+                    </button>
+                </div>
+            </form>
+
+            <div class="auth-footer">
+                <p>Don’t have an account?</p>
+                <a asp-area="Identity" asp-page="/Account/Register" class="btn-auth-outline w-100">
+                    <i class='bx bx-user-plus'></i> Create an Account
+                </a>
             </div>
         </div>
     </div>

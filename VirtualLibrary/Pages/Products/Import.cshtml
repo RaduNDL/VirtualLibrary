@@ -1,21 +1,46 @@
 ﻿@page
 @model VirtualLibrary.Pages.Products.ImportModel
 @{
-    ViewData["Title"] = "Import Books";
+    ViewData["Title"] = "Bulk Import";
+    Layout = "~/Pages/Shared/_Layout.cshtml";
 }
 
-<h1>Import Books</h1>
-<form method="post" class="row g-3">
-    <div class="col-md-6">
-        <label class="form-label">Subject (ex: fiction, history, computers)</label>
-        <input asp-for="Subject" class="form-control" />
+<link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+<link rel="stylesheet" href="~/css/AdminProducts.css">
+
+<div class="mgmt-wrapper">
+    <div class="mgmt-container">
+        <header class="mgmt-header">
+            <a asp-page="./Index" class="back-link"><i class='bx bx-left-arrow-alt'></i> Back to Books</a>
+            <h2 class="mt-2">Bulk Import Books</h2>
+        </header>
+
+        <div class="form-card">
+            <div class="import-info-box mb-4">
+                <i class='bx bx-info-circle'></i>
+                <p>Import books automatically by subject keyword. This process might take a few moments depending on the count.</p>
+            </div>
+
+            <form method="post" class="row g-4">
+                <div class="col-md-8">
+                    <div class="input-group-modern">
+                        <label asp-for="Subject">Subject (ex: fiction, history, computers)</label>
+                        <input asp-for="Subject" placeholder="Enter keyword..." />
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="input-group-modern">
+                        <label asp-for="Count">Count</label>
+                        <input asp-for="Count" type="number" min="1" max="400" />
+                    </div>
+                </div>
+                <div class="col-12 form-actions mt-2">
+                    <button type="submit" class="btn-save">
+                        <i class='bx bx-cloud-download'></i> Run Import
+                    </button>
+                    <a asp-page="./Index" class="btn-cancel">Cancel</a>
+                </div>
+            </form>
+        </div>
     </div>
-    <div class="col-md-3">
-        <label class="form-label">Count</label>
-        <input asp-for="Count" type="number" min="1" max="400" class="form-control" />
-    </div>
-    <div class="col-12">
-        <button class="btn btn-primary">Import</button>
-        <a asp-page="./Index" class="btn btn-secondary">Back</a>
-    </div>
-</form>
+</div>

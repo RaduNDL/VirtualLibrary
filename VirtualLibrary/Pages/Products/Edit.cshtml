@@ -2,79 +2,101 @@
 @model VirtualLibrary.Pages.Products.EditModel
 @{
     ViewData["Title"] = "Edit Book";
+    Layout = "~/Pages/Shared/_Layout.cshtml";
 }
 
-<h1>Edit Book</h1>
-<hr />
+<link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+<link rel="stylesheet" href="~/css/AdminProducts.css">
 
-<form method="post" enctype="multipart/form-data">
-    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-    <input type="hidden" asp-for="Product.Id" />
+<div class="mgmt-wrapper">
+    <div class="mgmt-container-wide">
+        <header class="mgmt-header">
+            <a asp-page="./Index" class="back-link"><i class='bx bx-left-arrow-alt'></i> Back to Books</a>
+            <h2 class="mt-2">Edit Book: @Model.Product.Title</h2>
+        </header>
 
-    <div class="row g-4">
-        <div class="col-md-4">
-            <div class="border rounded p-2 text-center">
-                <img src="~/@Model.Product.ImagePath"
-                     alt="@Model.Product.Title"
-                     class="img-fluid rounded"
-                     asp-append-version="true"
-                     onerror="this.src='/images/no-cover.svg';this.onerror=null;" />
-            </div>
-            <div class="mt-3">
-                <label asp-for="ImageFile" class="form-label">Replace cover</label>
-                <input asp-for="ImageFile" type="file" class="form-control" accept=".jpg,.jpeg,.png,.webp" />
-                <span class="form-text">Accepted: .jpg, .jpeg, .png, .webp — max 5MB</span>
-                <span asp-validation-for="ImageFile" class="text-danger"></span>
-            </div>
-        </div>
+        <div class="form-card">
+            <form method="post" enctype="multipart/form-data">
+                <div asp-validation-summary="ModelOnly" class="text-error-summary"></div>
+                <input type="hidden" asp-for="Product.Id" />
 
-        <div class="col-md-8">
-            <div class="row g-3">
-                <div class="col-md-8">
-                    <label asp-for="Product.Title" class="form-label"></label>
-                    <input asp-for="Product.Title" class="form-control" />
-                    <span asp-validation-for="Product.Title" class="text-danger"></span>
+                <div class="row g-4">
+                    <div class="col-md-4">
+                        <div class="current-cover-preview">
+                            <img src="~/@Model.Product.ImagePath" alt="@Model.Product.Title" asp-append-version="true" onerror="this.src='/images/no-cover.svg';this.onerror=null;" />
+                        </div>
+                        <div class="input-group-modern mt-3 border-dash-box">
+                            <label asp-for="ImageFile">Replace Cover (Max 5MB)</label>
+                            <input asp-for="ImageFile" type="file" accept=".jpg,.jpeg,.png,.webp" />
+                            <span asp-validation-for="ImageFile" class="text-error"></span>
+                        </div>
+                    </div>
+
+                    <div class="col-md-8">
+                        <div class="row g-3">
+                            <div class="col-md-8">
+                                <div class="input-group-modern">
+                                    <label asp-for="Product.Title"></label>
+                                    <input asp-for="Product.Title" />
+                                    <span asp-validation-for="Product.Title" class="text-error"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="input-group-modern">
+                                    <label asp-for="Product.Price"></label>
+                                    <input asp-for="Product.Price" />
+                                    <span asp-validation-for="Product.Price" class="text-error"></span>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="input-group-modern">
+                                    <label asp-for="Product.Author"></label>
+                                    <input asp-for="Product.Author" />
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="input-group-modern">
+                                    <label asp-for="Product.Isbn"></label>
+                                    <input asp-for="Product.Isbn" />
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="input-group-modern">
+                                    <label asp-for="Product.CategoryId">Category</label>
+                                    <select asp-for="Product.CategoryId" asp-items="Model.Categories">
+                                        <option value="">— None —</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="input-group-modern">
+                                    <label asp-for="Product.Stock"></label>
+                                    <input asp-for="Product.Stock" />
+                                </div>
+                            </div>
+
+                            <div class="col-12">
+                                <div class="input-group-modern">
+                                    <label asp-for="Product.Description"></label>
+                                    <textarea asp-for="Product.Description" rows="6"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-actions mt-4">
+                            <button type="submit" class="btn-save">
+                                <i class='bx bx-save'></i> Save Changes
+                            </button>
+                            <a asp-page="./Index" class="btn-cancel">Cancel</a>
+                        </div>
+                    </div>
                 </div>
-                <div class="col-md-4">
-                    <label asp-for="Product.Price" class="form-label"></label>
-                    <input asp-for="Product.Price" class="form-control" />
-                    <span asp-validation-for="Product.Price" class="text-danger"></span>
-                </div>
-
-                <div class="col-md-6">
-                    <label asp-for="Product.Author" class="form-label"></label>
-                    <input asp-for="Product.Author" class="form-control" />
-                </div>
-                <div class="col-md-6">
-                    <label asp-for="Product.Isbn" class="form-label"></label>
-                    <input asp-for="Product.Isbn" class="form-control" />
-                </div>
-
-                <div class="col-md-6">
-                    <label asp-for="Product.CategoryId" class="form-label">Category</label>
-                    <select asp-for="Product.CategoryId" class="form-select" asp-items="Model.Categories">
-                        <option value="">— None —</option>
-                    </select>
-                </div>
-
-                <div class="col-md-6">
-                    <label asp-for="Product.Stock" class="form-label"></label>
-                    <input asp-for="Product.Stock" class="form-control" />
-                </div>
-
-                <div class="col-12">
-                    <label asp-for="Product.Description" class="form-label"></label>
-                    <textarea asp-for="Product.Description" rows="6" class="form-control"></textarea>
-                </div>
-            </div>
-
-            <div class="mt-3 d-flex gap-2">
-                <button type="submit" class="btn btn-primary">Save changes</button>
-                <a asp-page="./Index" class="btn btn-secondary">Cancel</a>
-            </div>
+            </form>
         </div>
     </div>
-</form>
+</div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />

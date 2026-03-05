@@ -5,40 +5,60 @@
     Layout = "~/Pages/Shared/_Layout.cshtml";
 }
 
-<div class="container mt-4">
-    <h2 class="text-primary mb-3">My Wishlist</h2>
+<link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+<link rel="stylesheet" href="~/css/UserPortal.css">
 
-    @if (Model.Favorites == null || !Model.Favorites.Any())
-    {
-        <div class="alert alert-info">You have no items in your wishlist.</div>
-    }
-    else
-    {
-        <table class="table table-hover align-middle">
-            <thead class="table-light">
-                <tr>
-                    <th>Product</th>
-                    <th>Price</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var item in Model.Favorites)
-                {
-                    <tr>
-                        <td class="fw-semibold">@item.Product.Title</td>
-                        <td>@item.Product.Price.ToString("0.00") RON</td>
-                        <td>
-                            <form method="post" asp-page-handler="Remove">
-                                <input type="hidden" name="productId" value="@item.ProductId" />
-                                <button type="submit" class="btn btn-sm btn-danger">
-                                    <i class="bi bi-x-circle"></i> Remove
-                                </button>
-                            </form>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    }
+<div class="portal-wrapper">
+    <div class="portal-container">
+        <header class="portal-header">
+            <h2><i class='bx bx-heart'></i> My Wishlist</h2>
+            <p>Your saved books for later.</p>
+        </header>
+
+        @if (Model.Favorites == null || !Model.Favorites.Any())
+        {
+            <div class="empty-state">
+                <i class='bx bx-heart-circle'></i>
+                <h3>Your wishlist is empty</h3>
+                <p>Save items you like to view them later.</p>
+                <a asp-page="/Library/Index" class="btn-primary">Browse Library</a>
+            </div>
+        }
+        else
+        {
+            <div class="table-card">
+                <table class="portal-table">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Price</th>
+                            <th class="text-right">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model.Favorites)
+                        {
+                            <tr>
+                                <td class="td-main">
+                                    <div class="item-wrapper">
+                                        <div class="item-icon"><i class='bx bx-book-bookmark'></i></div>
+                                        <span>@item.Product.Title</span>
+                                    </div>
+                                </td>
+                                <td class="fw-semibold">@item.Product.Price.ToString("0.00") RON</td>
+                                <td class="text-right">
+                                    <form method="post" asp-page-handler="Remove">
+                                        <input type="hidden" name="productId" value="@item.ProductId" />
+                                        <button type="submit" class="btn-action-danger">
+                                            <i class='bx bx-trash'></i> Remove
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
 </div>

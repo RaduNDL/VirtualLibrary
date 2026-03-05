@@ -2,69 +2,105 @@
 @model VirtualLibrary.Pages.Products.CreateModel
 @{
     ViewData["Title"] = "Add Book";
+    Layout = "~/Pages/Shared/_Layout.cshtml";
 }
 
-<h1>Add Book</h1>
-<hr />
-<form method="post" enctype="multipart/form-data">
-    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+<link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+<link rel="stylesheet" href="~/css/AdminProducts.css">
 
-    <div class="row g-3">
-        <div class="col-md-6">
-            <label asp-for="Product.Title" class="form-label"></label>
-            <input asp-for="Product.Title" class="form-control" />
-            <span asp-validation-for="Product.Title" class="text-danger"></span>
-        </div>
-        <div class="col-md-6">
-            <label asp-for="Product.Author" class="form-label"></label>
-            <input asp-for="Product.Author" class="form-control" />
-        </div>
+<div class="mgmt-wrapper">
+    <div class="mgmt-container">
+        <header class="mgmt-header">
+            <a asp-page="./Index" class="back-link"><i class='bx bx-left-arrow-alt'></i> Back to Books</a>
+            <h2 class="mt-2">Add New Book</h2>
+        </header>
 
-        <div class="col-md-4">
-            <label asp-for="Product.Isbn" class="form-label"></label>
-            <input asp-for="Product.Isbn" class="form-control" />
-        </div>
-        <div class="col-md-4">
-            <label asp-for="Product.Price" class="form-label"></label>
-            <input asp-for="Product.Price" class="form-control" />
-            <span asp-validation-for="Product.Price" class="text-danger"></span>
-        </div>
-        <div class="col-md-4">
-            <label asp-for="Product.Stock" class="form-label"></label>
-            <input asp-for="Product.Stock" class="form-control" />
-        </div>
+        <div class="form-card">
+            <form method="post" enctype="multipart/form-data">
+                <div asp-validation-summary="ModelOnly" class="text-error-summary"></div>
 
-        <div class="col-md-6">
-            <label asp-for="Product.CategoryId" class="form-label">Category</label>
-            <select asp-for="Product.CategoryId" class="form-select" asp-items="Model.Categories">
-                <option value="">— None —</option>
-            </select>
-        </div>
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <div class="input-group-modern">
+                            <label asp-for="Product.Title"></label>
+                            <input asp-for="Product.Title" placeholder="Book Title" />
+                            <span asp-validation-for="Product.Title" class="text-error"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="input-group-modern">
+                            <label asp-for="Product.Author"></label>
+                            <input asp-for="Product.Author" placeholder="Author Name" />
+                            <span asp-validation-for="Product.Author" class="text-error"></span>
+                        </div>
+                    </div>
 
-        <div class="col-md-6">
-            <label asp-for="Product.SupplierId" class="form-label">Supplier</label>
-            <select asp-for="Product.SupplierId" class="form-select" asp-items="Model.Suppliers">
-                <option value="">— None —</option>
-            </select>
-        </div>
+                    <div class="col-md-4">
+                        <div class="input-group-modern">
+                            <label asp-for="Product.Isbn"></label>
+                            <input asp-for="Product.Isbn" placeholder="ISBN-13" />
+                            <span asp-validation-for="Product.Isbn" class="text-error"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="input-group-modern">
+                            <label asp-for="Product.Price"></label>
+                            <input asp-for="Product.Price" placeholder="0.00" />
+                            <span asp-validation-for="Product.Price" class="text-error"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="input-group-modern">
+                            <label asp-for="Product.Stock"></label>
+                            <input asp-for="Product.Stock" placeholder="0" />
+                            <span asp-validation-for="Product.Stock" class="text-error"></span>
+                        </div>
+                    </div>
 
-        <div class="col-md-6">
-            <label asp-for="ImageFile" class="form-label">Cover image</label>
-            <input asp-for="ImageFile" type="file" class="form-control" accept=".jpg,.jpeg,.png,.webp" />
-            <span class="form-text">Max 5MB</span>
-        </div>
+                    <div class="col-md-6">
+                        <div class="input-group-modern">
+                            <label asp-for="Product.CategoryId">Category</label>
+                            <select asp-for="Product.CategoryId" asp-items="Model.Categories">
+                                <option value="">— None —</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="input-group-modern">
+                            <label asp-for="Product.SupplierId">Supplier</label>
+                            <select asp-for="Product.SupplierId" asp-items="Model.Suppliers">
+                                <option value="">— None —</option>
+                            </select>
+                        </div>
+                    </div>
 
-        <div class="col-12">
-            <label asp-for="Product.Description" class="form-label"></label>
-            <textarea asp-for="Product.Description" rows="5" class="form-control"></textarea>
+                    <div class="col-12">
+                        <div class="input-group-modern border-dash-box">
+                            <label asp-for="ImageFile">Cover Image (Max 5MB)</label>
+                            <input asp-for="ImageFile" type="file" accept=".jpg,.jpeg,.png,.webp" />
+                            <span asp-validation-for="ImageFile" class="text-error"></span>
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <div class="input-group-modern">
+                            <label asp-for="Product.Description"></label>
+                            <textarea asp-for="Product.Description" rows="5" placeholder="Enter book description..."></textarea>
+                            <span asp-validation-for="Product.Description" class="text-error"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions mt-4">
+                    <button type="submit" class="btn-save">
+                        <i class='bx bx-save'></i> Save Book
+                    </button>
+                    <a asp-page="./Index" class="btn-cancel">Cancel</a>
+                </div>
+            </form>
         </div>
     </div>
-
-    <div class="mt-3">
-        <button type="submit" class="btn btn-primary">Save</button>
-        <a asp-page="./Index" class="btn btn-secondary">Cancel</a>
-    </div>
-</form>
+</div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />

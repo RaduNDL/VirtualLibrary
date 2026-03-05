@@ -5,40 +5,63 @@
     Layout = "~/Pages/Shared/_Layout.cshtml";
 }
 
-<div class="container mt-4">
+<link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+<link rel="stylesheet" href="~/css/UserPortal.css">
 
-    <h2 class="text-primary mb-3">Order Details</h2>
+<div class="portal-wrapper">
+    <div class="portal-container">
+        <header class="portal-header flex-between">
+            <div>
+                <a asp-page="Index" class="back-link"><i class='bx bx-left-arrow-alt'></i> Back to Orders</a>
+                <h2 class="mt-2">Order #@Model.Order.OrderId</h2>
+            </div>
+            <div class="order-total-highlight">
+                <span>Total Amount</span>
+                <h3>@Model.Order.TotalAmount.ToString("0.00") RON</h3>
+            </div>
+        </header>
 
-    <div class="card p-3 mb-4">
-        <p><strong>Order #:</strong> @Model.Order.OrderId</p>
-        <p><strong>Date:</strong> @Model.Order.OrderDate</p>
-        <p><strong>Status:</strong> @Model.Order.Status</p>
-        <p><strong>Total:</strong> <span class="text-success fw-bold">@Model.Order.TotalAmount.ToString("0.00") RON</span></p>
+        <div class="summary-cards-grid">
+            <div class="info-card">
+                <i class='bx bx-calendar'></i>
+                <div>
+                    <span>Order Date</span>
+                    <strong>@Model.Order.OrderDate.ToString("f")</strong>
+                </div>
+            </div>
+            <div class="info-card">
+                <i class='bx bx-loader-circle'></i>
+                <div>
+                    <span>Status</span>
+                    <strong class="text-accent">@Model.Order.Status</strong>
+                </div>
+            </div>
+        </div>
+
+        <h3 class="section-subtitle">Items in this order</h3>
+
+        <div class="table-card mt-3">
+            <table class="portal-table">
+                <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th>Price</th>
+                        <th class="text-center">Quantity</th>
+                        <th class="text-right">Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.Order.Items)
+                    {
+                        <tr>
+                            <td class="fw-semibold">@item.Product.Title</td>
+                            <td>@item.Price.ToString("0.00") RON</td>
+                            <td class="text-center">@item.Quantity</td>
+                            <td class="text-right fw-bold">@((item.Price * item.Quantity).ToString("0.00")) RON</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
     </div>
-
-    <h4>Items</h4>
-
-    <table class="table table-bordered align-middle mt-3">
-        <thead class="table-light">
-            <tr>
-                <th>Product</th>
-                <th>Price</th>
-                <th>Quantity</th>
-                <th>Subtotal</th>
-            </tr>
-        </thead>
-
-        <tbody>
-            @foreach (var item in Model.Order.Items)
-            {
-                <tr>
-                    <td>@item.Product.Title</td>
-                    <td>@item.Price.ToString("0.00")</td>
-                    <td>@item.Quantity</td>
-                    <td>@(item.Price* item.Quantity).ToString("0.00")</td>
-                </tr>
-            }
-        </tbody>
-    </table>
-
 </div>

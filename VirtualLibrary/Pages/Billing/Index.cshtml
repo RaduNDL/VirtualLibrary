@@ -1,149 +1,143 @@
 ﻿@page
 @model VirtualLibrary.Pages.Billing.IndexModel
 @{
-    ViewData["Title"] = "Billing & Checkout";
-    Layout = "~/Pages/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Secure Checkout";
+   
 }
 
-<div class="container mt-4">
-    <h2 class="text-primary mb-3">Billing & Checkout</h2>
+<link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+<link rel="stylesheet" href="~/css/Billing.css">
 
-    @if (Model.CartItems == null || !Model.CartItems.Any())
-    {
-        <div class="alert alert-info">Your cart is empty.</div>
-    }
-    else
-    {
-        <div class="row">
-            <div class="col-md-6 mb-4">
-                <div class="card shadow-sm">
-                    <div class="card-header bg-light">
-                        <h5 class="mb-0">Order Summary</h5>
-                    </div>
-                    <div class="card-body">
-                        <table class="table table-sm align-middle mb-0">
-                            <thead>
-                                <tr>
-                                    <th>Product</th>
-                                    <th class="text-end">Price</th>
-                                    <th class="text-center">Qty</th>
-                                    <th class="text-end">Subtotal</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var item in Model.CartItems)
-                                {
-                                    <tr>
-                                        <td>@item.Product.Title</td>
-                                        <td class="text-end">@item.Product.Price.ToString("0.00")</td>
-                                        <td class="text-center">@item.Quantity</td>
-                                        <td class="text-end">
-                                            @(item.Product.Price* item.Quantity).ToString("0.00")
-                                        </td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
+<div class="checkout-wrapper">
+    <div class="checkout-container">
+        <header class="checkout-header">
+            <a asp-page="/Index" class="back-btn"><i class='bx bx-left-arrow-alt'></i> Back to Library</a>
+            <h2>Secure Checkout</h2>
+            <p>Complete your purchase by providing your payment details.</p>
+        </header>
 
-                        <hr />
+        @if (Model.CartItems == null || !Model.CartItems.Any())
+        {
+            <div class="empty-cart-state">
+                <i class='bx bx-cart-add'></i>
+                <h3>Your cart is empty</h3>
+                <p>Add some books to your library to proceed.</p>
+                <a asp-page="/Index" class="btn-primary">Browse Books</a>
+            </div>
+        }
+        else
+        {
+            <div class="checkout-grid">
+                <div class="form-section">
+                    <form method="post" id="payment-form">
+                        <div class="card-glass">
+                            <h5 class="section-title"><i class='bx bx-map-pin'></i> Shipping Information</h5>
+                            <div class="input-group-modern">
+                                <label asp-for="Checkout.FullName"></label>
+                                <input asp-for="Checkout.FullName" placeholder="John Doe" />
+                                <span asp-validation-for="Checkout.FullName" class="text-error"></span>
+                            </div>
 
-                        <div class="d-flex justify-content-between">
-                            <span class="fw-semibold">Total:</span>
-                            <span class="fw-bold text-success">
-                                @Model.Total.ToString("0.00") RON
-                            </span>
+                            <div class="input-group-modern">
+                                <label asp-for="Checkout.Address"></label>
+                                <input asp-for="Checkout.Address" placeholder="Street Name, No. 5" />
+                                <span asp-validation-for="Checkout.Address" class="text-error"></span>
+                            </div>
+
+                            <div class="row-flex">
+                                <div class="input-group-modern">
+                                    <label asp-for="Checkout.City"></label>
+                                    <input asp-for="Checkout.City" placeholder="Bucharest" />
+                                    <span asp-validation-for="Checkout.City" class="text-error"></span>
+                                </div>
+                                <div class="input-group-modern">
+                                    <label asp-for="Checkout.PostalCode"></label>
+                                    <input asp-for="Checkout.PostalCode" placeholder="123456" />
+                                    <span asp-validation-for="Checkout.PostalCode" class="text-error"></span>
+                                </div>
+                            </div>
+
+                            <div class="input-group-modern">
+                                <label asp-for="Checkout.PhoneNumber"></label>
+                                <input asp-for="Checkout.PhoneNumber" placeholder="07xx xxx xxx" />
+                                <span asp-validation-for="Checkout.PhoneNumber" class="text-error"></span>
+                            </div>
+                        </div>
+
+                        <div class="card-glass mt-4">
+                            <h5 class="section-title"><i class='bx bx-credit-card'></i> Payment Details</h5>
+                            <div class="input-group-modern">
+                                <label asp-for="Checkout.CardNumber"></label>
+                                <div class="card-input-wrapper">
+                                    <input asp-for="Checkout.CardNumber" inputmode="numeric" maxlength="16" placeholder="0000 0000 0000 0000" />
+                                    <i class='bx bxl-visa'></i>
+                                </div>
+                                <span asp-validation-for="Checkout.CardNumber" class="text-error"></span>
+                            </div>
+
+                            <div class="row-flex">
+                                <div class="input-group-modern">
+                                    <label>Expiry Month</label>
+                                    <input asp-for="Checkout.ExpiryMonth" placeholder="MM" />
+                                    <span asp-validation-for="Checkout.ExpiryMonth" class="text-error"></span>
+                                </div>
+                                <div class="input-group-modern">
+                                    <label>Expiry Year</label>
+                                    <input asp-for="Checkout.ExpiryYear" placeholder="YYYY" />
+                                    <span asp-validation-for="Checkout.ExpiryYear" class="text-error"></span>
+                                </div>
+                                <div class="input-group-modern">
+                                    <label asp-for="Checkout.Cvv"></label>
+                                    <input asp-for="Checkout.Cvv" maxlength="3" placeholder="123" />
+                                    <span asp-validation-for="Checkout.Cvv" class="text-error"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="pay-button">
+                            <span>Confirm Order &middot; @Model.Total.ToString("0.00") RON</span>
+                            <i class='bx bx-lock-alt'></i>
+                        </button>
+                    </form>
+                </div>
+
+                <div class="summary-section">
+                    <div class="card-summary">
+                        <h3>Order Summary</h3>
+                        <div class="order-items">
+                            @foreach (var item in Model.CartItems)
+                            {
+                                <div class="item">
+                                    <div class="item-info">
+                                        <span class="item-name">@item.Product.Title</span>
+                                        <span class="item-qty">Qty: @item.Quantity</span>
+                                    </div>
+                                    <span class="item-price">@((item.Product.Price * item.Quantity).ToString("0.00")) RON</span>
+                                </div>
+                            }
+                        </div>
+                        <div class="total-divider"></div>
+                        <div class="summary-row">
+                            <span>Subtotal</span>
+                            <span>@Model.Total.ToString("0.00") RON</span>
+                        </div>
+                        <div class="summary-row">
+                            <span>Shipping</span>
+                            <span class="free">FREE</span>
+                        </div>
+                        <div class="summary-row total">
+                            <span>Total</span>
+                            <span>@Model.Total.ToString("0.00") RON</span>
                         </div>
                     </div>
-                </div>
-            </div>
 
-            <div class="col-md-6 mb-4">
-                <div class="card shadow-sm">
-                    <div class="card-header bg-light">
-                        <h5 class="mb-0">Billing Details</h5>
-                    </div>
-                    <div class="card-body">
-                        <form method="post">
-                            <div class="mb-3">
-                                <label asp-for="Checkout.FullName" class="form-label"></label>
-                                <input asp-for="Checkout.FullName" class="form-control" />
-                                <span asp-validation-for="Checkout.FullName" class="text-danger"></span>
-                            </div>
-
-                            <div class="mb-3">
-                                <label asp-for="Checkout.Address" class="form-label"></label>
-                                <input asp-for="Checkout.Address" class="form-control" />
-                                <span asp-validation-for="Checkout.Address" class="text-danger"></span>
-                            </div>
-
-                            <div class="mb-3">
-                                <label asp-for="Checkout.City" class="form-label"></label>
-                                <input asp-for="Checkout.City" class="form-control" />
-                                <span asp-validation-for="Checkout.City" class="text-danger"></span>
-                            </div>
-
-                            <div class="mb-3">
-                                <label asp-for="Checkout.PostalCode" class="form-label"></label>
-                                <input asp-for="Checkout.PostalCode" class="form-control" />
-                                <span asp-validation-for="Checkout.PostalCode" class="text-danger"></span>
-                            </div>
-
-                            <div class="mb-3">
-                                <label asp-for="Checkout.PhoneNumber" class="form-label"></label>
-                                <input asp-for="Checkout.PhoneNumber" class="form-control" />
-                                <span asp-validation-for="Checkout.PhoneNumber" class="text-danger"></span>
-                            </div>
-
-                            <hr />
-
-                            <h6 class="mb-3">Payment details</h6>
-
-                            <div class="mb-3">
-                                <label asp-for="Checkout.CardNumber" class="form-label"></label>
-                                <input asp-for="Checkout.CardNumber"
-                                       class="form-control"
-                                       inputmode="numeric"
-                                       maxlength="19" />
-                                <span asp-validation-for="Checkout.CardNumber" class="text-danger"></span>
-                            </div>
-
-                            <div class="row">
-                                <div class="col-6 mb-3">
-                                    <label asp-for="Checkout.ExpiryMonth" class="form-label"></label>
-                                    <input asp-for="Checkout.ExpiryMonth"
-                                           class="form-control"
-                                           min="1"
-                                           max="12" />
-                                    <span asp-validation-for="Checkout.ExpiryMonth" class="text-danger"></span>
-                                </div>
-                                <div class="col-6 mb-3">
-                                    <label asp-for="Checkout.ExpiryYear" class="form-label"></label>
-                                    <input asp-for="Checkout.ExpiryYear"
-                                           class="form-control"
-                                           min="2024"
-                                           max="2100" />
-                                    <span asp-validation-for="Checkout.ExpiryYear" class="text-danger"></span>
-                                </div>
-                            </div>
-
-                            <div class="mb-3">
-                                <label asp-for="Checkout.Cvv" class="form-label"></label>
-                                <input asp-for="Checkout.Cvv"
-                                       class="form-control"
-                                       inputmode="numeric"
-                                       maxlength="4" />
-                                <span asp-validation-for="Checkout.Cvv" class="text-danger"></span>
-                            </div>
-
-                            <button type="submit" class="btn btn-success w-100">
-                                <i class="bi bi-check2-circle"></i> Confirm &amp; Pay
-                            </button>
-                        </form>
+                    <div class="trust-badges">
+                        <p><i class='bx bxs-shield-checked'></i> Secure 256-bit SSL encryption</p>
                     </div>
                 </div>
             </div>
-        </div>
-    }
+        }
+    </div>
 </div>
 
 @section Scripts {

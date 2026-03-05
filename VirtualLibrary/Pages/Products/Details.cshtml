@@ -5,41 +5,72 @@
     Layout = "~/Pages/Shared/_Layout.cshtml";
 }
 
-<div class="row">
-    <div class="col-md-4">
-        <img src="~/@Model.Product.ImagePath" alt="@Model.Product.Title" class="img-fluid rounded border"
-             asp-append-version="true"
-             onerror="this.src='/images/no-cover.svg';this.onerror=null;" />
-    </div>
+<link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+<link rel="stylesheet" href="~/css/AdminProducts.css">
 
-    <div class="col-md-8">
-        <h1>@Model.Product.Title</h1>
+<div class="mgmt-wrapper">
+    <div class="mgmt-container-wide">
+        <header class="mgmt-header">
+            <a href="@Model.SafeReturnUrl" class="back-link"><i class='bx bx-left-arrow-alt'></i> Back</a>
+            <h2 class="mt-2">Book Details</h2>
+        </header>
 
-        @if (!string.IsNullOrWhiteSpace(Model.Product.Author))
-        {
-            <p class="text-muted mb-1">@Model.Product.Author</p>
-        }
+        <div class="details-card">
+            <div class="row g-4">
+                <div class="col-md-4 text-center">
+                    <img src="~/@Model.Product.ImagePath" alt="@Model.Product.Title" class="details-cover" asp-append-version="true" onerror="this.src='/images/no-cover.svg';this.onerror=null;" />
+                </div>
+                <div class="col-md-8">
+                    <div class="details-header-info">
+                        <h1>@Model.Product.Title</h1>
+                        @if (!string.IsNullOrWhiteSpace(Model.Product.Author))
+                        {
+                            <h4 class="author-name">@Model.Product.Author</h4>
+                        }
+                    </div>
 
-        @if (Model.Product.Stock > 0)
-        {
-            <p><span class="badge bg-success">In stock: @Model.Product.Stock</span></p>
-        }
-        else
-        {
-            <p><span class="badge bg-danger">Out of stock</span></p>
-        }
+                    <div class="details-badges">
+                        @if (Model.Product.Stock > 0)
+                        {
+                            <span class="badge-status in-stock"><i class='bx bx-check-circle'></i> In Stock (@Model.Product.Stock)</span>
+                        }
+                        else
+                        {
+                            <span class="badge-status out-of-stock"><i class='bx bx-x-circle'></i> Out of Stock</span>
+                        }
+                        <span class="badge-price">@Model.Product.Price.ToString("0.00") RON</span>
+                    </div>
 
-        <p><strong>ISBN:</strong> @Model.Product.Isbn</p>
-        <p><strong>Category:</strong> @Model.Product.Category?.Name</p>
+                    <div class="details-grid mt-4">
+                        <div class="detail-item">
+                            <span class="label">ISBN</span>
+                            <span class="value">@Model.Product.Isbn</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="label">Category</span>
+                            <span class="value">@Model.Product.Category?.Name</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="label">Supplier</span>
+                            <span class="value">@(Model.Product.Supplier?.Name ?? "—")</span>
+                        </div>
+                    </div>
 
-        <p><strong>Supplier:</strong> @(Model.Product.Supplier?.Name ?? "—")</p>
+                    <div class="details-description mt-4">
+                        <h5>Description</h5>
+                        <p>@Model.Product.Description</p>
+                    </div>
 
-        <p class="lead">@Model.Product.Description</p>
-
-        <p class="h5">Price: @Model.Product.Price.ToString("0.00") RON</p>
-
-        <a href="@Model.SafeReturnUrl" class="btn btn-outline-secondary mt-2">
-            Back
-        </a>
+                    <div class="details-actions mt-4">
+                        <a asp-page="./Edit" asp-route-id="@Model.Product.Id" class="btn-action-primary">
+                            <i class='bx bx-edit'></i> Edit Book
+                        </a>
+                        <a asp-page="./ManagePdf" asp-route-id="@Model.Product.Id" class="btn-action-secondary">
+                            <i class='bx bxs-file-pdf'></i> Manage PDF
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>

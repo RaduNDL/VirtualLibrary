@@ -2,38 +2,71 @@
 @model VirtualLibrary.Pages.Suppliers.IndexModel
 @{
     ViewData["Title"] = "Suppliers";
-}
-<h1>Suppliers</h1>
-<p>
-    <a asp-page="Create" class="btn btn-primary">Add Supplier</a>
-</p>
-
-@if (!string.IsNullOrEmpty(Model.StatusMessage))
-{
-    <div class="alert alert-info">@Model.StatusMessage</div>
+    Layout = "~/Pages/Shared/_Layout.cshtml";
 }
 
-<table class="table table-striped align-middle">
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Contact</th>
-            <th>Address</th>
-            <th class="text-end">Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var s in Model.Suppliers)
+<link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+<link rel="stylesheet" href="~/css/AdminSuppliers.css">
+
+<div class="mgmt-wrapper">
+    <div class="mgmt-container">
+        <header class="mgmt-header">
+            <div class="header-text">
+                <h2><i class='bx bxs-truck'></i> Suppliers</h2>
+                <p>Manage the partners that provide books to your library.</p>
+            </div>
+            <a asp-page="Create" class="btn-add-new">
+                <i class='bx bx-plus-circle'></i> Add Supplier
+            </a>
+        </header>
+
+        @if (!string.IsNullOrEmpty(Model.StatusMessage))
         {
-            <tr>
-                <td>@s.Name</td>
-                <td>@s.ContactInfo</td>
-                <td>@s.Address</td>
-                <td class="text-end">
-                    <a asp-page="Edit" asp-route-id="@s.SupplierId" class="btn btn-sm btn-outline-secondary">Edit</a>
-                    <a asp-page="Delete" asp-route-id="@s.SupplierId" class="btn btn-sm btn-outline-danger">Delete</a>
-                </td>
-            </tr>
+            <div class="alert-success-modern">
+                <i class='bx bx-check-double'></i> @Model.StatusMessage
+            </div>
         }
-    </tbody>
-</table>
+
+        <div class="table-card">
+            <table class="mgmt-table">
+                <thead>
+                    <tr>
+                        <th>Supplier Details</th>
+                        <th>Contact</th>
+                        <th>Address</th>
+                        <th class="text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var s in Model.Suppliers)
+                    {
+                        <tr>
+                            <td class="td-name">
+                                <div class="name-wrapper">
+                                    <div class="icon-small"><i class='bx bx-store-alt'></i></div>
+                                    <span>@s.Name</span>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="text-muted"><i class='bx bx-phone'></i> @s.ContactInfo</span>
+                            </td>
+                            <td>
+                                <span class="text-muted"><i class='bx bx-map-pin'></i> @s.Address</span>
+                            </td>
+                            <td class="text-right">
+                                <div class="actions-wrapper">
+                                    <a asp-page="Edit" asp-route-id="@s.SupplierId" class="action-btn edit" title="Edit">
+                                        <i class='bx bx-edit-alt'></i>
+                                    </a>
+                                    <a asp-page="Delete" asp-route-id="@s.SupplierId" class="action-btn delete" title="Delete">
+                                        <i class='bx bx-trash'></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

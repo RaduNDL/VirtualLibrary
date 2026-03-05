@@ -5,26 +5,40 @@
     Layout = "~/Pages/Shared/_Layout.cshtml";
 }
 
-<div class="container mt-4">
-    <h2 class="text-primary mb-3">Edit Category</h2>
+<link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+<link rel="stylesheet" href="~/css/AddCategory.css"> @* Reutilizăm stilul de la Add *@
 
-    <form method="post">
-        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-        <input type="hidden" asp-for="Category.CategoryId" />
+<div class="admin-form-wrapper">
+    <div class="admin-form-container">
+        <header class="form-header">
+            <a asp-page="Index" class="back-btn"><i class='bx bx-left-arrow-alt'></i> Back to List</a>
+            <h2>Modify Category</h2>
+            <p>Update the name for <strong>@Model.Category.Name</strong></p>
+        </header>
 
-        <div class="mb-3">
-            <label asp-for="Category.Name" class="form-label"></label>
-            <input asp-for="Category.Name" class="form-control" />
-            <span asp-validation-for="Category.Name" class="text-danger"></span>
+        <div class="form-card">
+            <form method="post">
+                <div asp-validation-summary="ModelOnly" class="text-error-summary"></div>
+                <input type="hidden" asp-for="Category.CategoryId" />
+
+                <div class="input-group-modern">
+                    <label asp-for="Category.Name"></label>
+                    <div class="input-with-icon">
+                        <i class='bx bx-rename'></i>
+                        <input asp-for="Category.Name" placeholder="Update name..." />
+                    </div>
+                    <span asp-validation-for="Category.Name" class="text-error"></span>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn-save">
+                        <i class='bx bx-save'></i> Save Changes
+                    </button>
+                    <a asp-page="Index" class="btn-cancel">Discard</a>
+                </div>
+            </form>
         </div>
-
-        <div class="d-flex gap-2">
-            <button type="submit" class="btn btn-primary">
-                <i class="bi bi-save"></i> Save changes
-            </button>
-            <a asp-page="Index" class="btn btn-secondary">Cancel</a>
-        </div>
-    </form>
+    </div>
 </div>
 
 @section Scripts {

@@ -1,21 +1,30 @@
 ﻿@page "{id:int}"
 @model VirtualLibrary.Pages.Categories.DeleteModel
 @{
-    ViewData["Title"] = "Delete Category";
+    ViewData["Title"] = "Remove Category";
     Layout = "~/Pages/Shared/_Layout.cshtml";
 }
 
-<div class="container mt-4">
-    <h2 class="text-danger mb-3">Delete Category</h2>
-    <div class="alert alert-warning">
-        Are you sure you want to delete the category
-        <strong>@Model.Category.Name</strong>?
-    </div>
+<link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+<link rel="stylesheet" href="~/css/AdminManagement.css">
 
-    <form method="post" class="d-flex gap-2">
-        <button type="submit" class="btn btn-danger">
-            <i class="bi bi-trash"></i> Delete
-        </button>
-        <a asp-page="Index" class="btn btn-secondary">Cancel</a>
-    </form>
+<div class="mgmt-wrapper">
+    <div class="delete-confirmation-container">
+        <div class="delete-card">
+            <div class="delete-icon">
+                <i class='bx bx-error-alt'></i>
+            </div>
+            <h3>Are you sure?</h3>
+            <p>You are about to remove the category <strong>"@Model.Category.Name"</strong>. This action might affect products assigned to it.</p>
+
+            <form method="post" class="delete-form">
+                <button type="submit" class="btn-confirm-delete">
+                    <i class='bx bx-trash'></i> Yes, Delete it
+                </button>
+                <a asp-page="Index" class="btn-keep">
+                    No, Keep it
+                </a>
+            </form>
+        </div>
+    </div>
 </div>
