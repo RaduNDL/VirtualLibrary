@@ -1,167 +1,124 @@
-﻿@using Microsoft.AspNetCore.Identity
-@inject SignInManager<IdentityUser> SignInManager
-@inject UserManager<IdentityUser> UserManager
-
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - VirtualLibrary</title>
-
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
-    <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
-
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/Layout.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/VirtualLibrary.styles.css" asp-append-version="true" />
+    <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
 </head>
-
-<body class="d-flex flex-column min-vh-100">
-
+<body>
     <header class="modern-header">
         <nav class="navbar navbar-expand-lg modern-navbar">
-            <div class="container-fluid px-4">
-
-                <a class="navbar-brand brand-logo" asp-page="/Index">
-                    <i class='bx bx-book-reader'></i> VirtualLibrary
+            <div class="container">
+                <a class="brand-logo" asp-area="" asp-page="/Index">
+                    <i class='bx bxs-book-reader'></i> VirtualLibrary
                 </a>
-
-                <button class="navbar-toggler custom-toggler" type="button" data-bs-toggle="collapse"
-                        data-bs-target="#navbarNav" aria-controls="navbarNav"
-                        aria-expanded="false" aria-label="Toggle navigation">
+                <button class="navbar-toggler custom-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent"
+                        aria-controls="navbarContent" aria-expanded="false" aria-label="Toggle navigation">
                     <i class='bx bx-menu'></i>
                 </button>
-
-                <div class="collapse navbar-collapse" id="navbarNav">
-
-                    <ul class="navbar-nav me-auto mb-2 mb-lg-0 nav-links-custom">
+                <div class="collapse navbar-collapse" id="navbarContent">
+                    <ul class="navbar-nav me-auto nav-links-custom">
                         <li class="nav-item">
-                            <a class="nav-link" asp-page="/Index">
+                            <a class="nav-link" asp-area="" asp-page="/Index">
                                 <i class='bx bx-home-alt'></i> Home
                             </a>
                         </li>
 
-                        <li class="nav-item">
-                            <a class="nav-link" asp-page="/Library/Index">
-                                <i class='bx bx-library'></i> Library
-                            </a>
-                        </li>
-
-                        @if (SignInManager.IsSignedIn(User))
+                        @if (User.Identity?.IsAuthenticated == true)
                         {
+                            @if (User.IsInRole("Administrator"))
+                            {
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle admin-link" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class='bx bxs-dashboard'></i> Admin Panel
+                                    </a>
+                                    <ul class="dropdown-menu modern-dropdown" aria-labelledby="adminDropdown">
+                                        <li><a class="dropdown-item" asp-page="/Admin/Index"><i class='bx bx-grid-alt'></i> Dashboard</a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item" asp-page="/Products/Index"><i class='bx bx-book'></i> Manage Products</a></li>
+                                        <li><a class="dropdown-item" asp-page="/Products/Import"><i class='bx bx-cloud-download'></i> Import Books (API)</a></li>
+                                        <li><a class="dropdown-item" asp-page="/Categories/Index"><i class='bx bx-category'></i> Categories</a></li>
+                                        <li><a class="dropdown-item" asp-page="/Suppliers/Index"><i class='bx bxs-truck'></i> Suppliers</a></li>
+                                        <li><a class="dropdown-item" asp-page="/Orders/Index"><i class='bx bx-list-ul'></i> All Customer Orders</a></li>
+                                    </ul>
+                                </li>
+                            }
+
+                            <li class="nav-item">
+                                <a class="nav-link" asp-page="/Library/Index">
+                                    <i class='bx bxs-library'></i> My Library
+                                </a>
+                            </li>
                             <li class="nav-item">
                                 <a class="nav-link audiobook-link" asp-page="/Audiobooks/Index">
-                                    <i class='bx bx-headphone'></i> Audiobooks
-                                </a>
-                            </li>
-                        }
-
-                        @if (User.Identity?.IsAuthenticated == true && User.IsInRole("Administrator"))
-                        {
-                            <li class="nav-item">
-                                <a class="nav-link" asp-page="/Products/Index">
-                                    <i class='bx bx-book-content'></i> Books
+                                    <i class='bx bxs-music'></i> Audiobooks
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" asp-page="/Suppliers/Index">
-                                    <i class='bx bxs-truck'></i> Suppliers
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-page="/Categories/Index">
-                                    <i class='bx bx-category'></i> Categories
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link admin-link" asp-page="/Admin/Index">
-                                    <i class='bx bx-shield-quarter'></i> Admin Panel
+                                <a class="nav-link" asp-page="/Orders/Index">
+                                    <i class='bx bx-receipt'></i> My Orders
                                 </a>
                             </li>
                         }
                     </ul>
-
-                    <ul class="navbar-nav mb-2 mb-lg-0 nav-actions-custom align-items-center">
-
-                        @if (SignInManager.IsSignedIn(User))
+                    <div class="d-flex align-items-center nav-actions-custom">
+                        @if (User.Identity?.IsAuthenticated == true)
                         {
-                            <li class="nav-item">
-                                <a class="nav-link icon-link" asp-page="/Favorites/Index" title="Wishlist">
-                                    <i class='bx bx-heart'></i>
+                            <a asp-page="/Cart/Index" class="icon-link position-relative me-3" title="Cart">
+                                <i class='bx bx-cart-alt'></i>
+                            </a>
+                            <div class="dropdown">
+                                <a class="dropdown-toggle user-dropdown" href="#" role="button" id="userMenu" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class='bx bxs-user-circle'></i> Account
                                 </a>
-                            </li>
-
-                            <li class="nav-item">
-                                <a class="nav-link icon-link" asp-page="/Cart/Index" title="Cart">
-                                    <i class='bx bx-cart-alt'></i>
-                                </a>
-                            </li>
-
-                            <li class="nav-item">
-                                <a class="nav-link icon-link" asp-page="/Orders/Index" title="Orders">
-                                    <i class='bx bx-receipt'></i>
-                                </a>
-                            </li>
-
-                            <li class="nav-item dropdown ms-3">
-                                <a class="nav-link dropdown-toggle user-dropdown" href="#" id="userDropdown"
-                                   role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    <i class='bx bx-user-circle'></i> <span>@User.Identity?.Name</span>
-                                </a>
-
-                                <ul class="dropdown-menu dropdown-menu-end modern-dropdown" aria-labelledby="userDropdown">
+                                <ul class="dropdown-menu dropdown-menu-end modern-dropdown" aria-labelledby="userMenu">
                                     <li>
-                                        <a class="dropdown-item" asp-page="/Profile/Index">
+                                        <a class="dropdown-item" asp-area="Identity" asp-page="/Account/Manage/Index">
                                             <i class='bx bx-user'></i> Profile
                                         </a>
                                     </li>
-                                    
-                                    <li><hr class="dropdown-divider" /></li>
+                                    <li><hr class="dropdown-divider"></li>
                                     <li>
-                                        <form method="post" asp-area="Identity" asp-page="/Account/Logout">
-                                            @Html.AntiForgeryToken()
-                                            <button type="submit" class="dropdown-item text-danger">
+                                        <form class="form-inline" asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="@Url.Page("/Index", new { area = "" })">
+                                            <button type="submit" class="dropdown-item text-danger border-0 bg-transparent" style="width: 100%; text-align: left;">
                                                 <i class='bx bx-log-out'></i> Logout
                                             </button>
                                         </form>
                                     </li>
                                 </ul>
-                            </li>
+                            </div>
                         }
                         else
                         {
-                            <li class="nav-item ms-2">
-                                <a class="nav-link btn-login" asp-area="Identity" asp-page="/Account/Login">
-                                    Login
-                                </a>
-                            </li>
-                            <li class="nav-item ms-2">
-                                <a class="nav-link btn-register" asp-area="Identity" asp-page="/Account/Register">
-                                    Register
-                                </a>
-                            </li>
+                            <a class="btn-login" asp-area="Identity" asp-page="/Account/Login">Sign In</a>
+                            <a class="btn-register ms-2" asp-area="Identity" asp-page="/Account/Register">Get Started</a>
                         }
-                    </ul>
+                    </div>
                 </div>
             </div>
         </nav>
     </header>
 
-    <main role="main" class="flex-fill main-content">
-        @RenderBody()
-    </main>
+    <div class="container main-content mt-4">
+        <main role="main" class="pb-5">
+            @RenderBody()
+        </main>
+    </div>
 
-    <footer class="modern-footer mt-auto">
-        <div class="container text-center">
-            <p>&copy; @DateTime.Now.Year - VirtualLibrary. All rights reserved.</p>
+    <footer class="modern-footer text-center">
+        <div class="container">
+            <p class="mb-1">&copy; 2026 VirtualLibrary. Crafted with <i class='bx bxs-heart text-danger'></i> for readers.</p>
+            <a asp-area="" asp-page="/Privacy" class="text-decoration-none text-muted">Privacy Policy</a>
         </div>
     </footer>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
-
-    @RenderSection("Scripts", required: false)
+    @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

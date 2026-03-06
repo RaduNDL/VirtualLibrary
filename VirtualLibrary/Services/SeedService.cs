@@ -27,14 +27,11 @@ namespace VirtualLibrary.Services
         {
             try
             {
-                // Migrate database
                 await _context.Database.MigrateAsync();
                 _logger.LogInformation("Database migrated successfully");
 
-                // Seed roles
                 await SeedRolesAsync();
 
-                // Seed admin user
                 await SeedAdminUserAsync();
             }
             catch (Exception ex)
@@ -74,7 +71,7 @@ namespace VirtualLibrary.Services
         private async Task SeedAdminUserAsync()
         {
             const string adminEmail = "admin@gmail.com";
-            const string adminPassword = "Admin123!";
+            const string adminPassword = "Parola123!";
             const string adminRole = "Administrator";
 
             var adminUser = await _userManager.FindByEmailAsync(adminEmail);

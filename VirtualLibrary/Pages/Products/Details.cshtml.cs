@@ -7,7 +7,7 @@ using VirtualLibrary.Models;
 
 namespace VirtualLibrary.Pages.Products
 {
-    [AllowAnonymous] 
+    [AllowAnonymous]
     public class DetailsModel : PageModel
     {
         private readonly AppDbContext _context;
@@ -25,7 +25,7 @@ namespace VirtualLibrary.Pages.Products
             Product = await _context.Products
                 .AsNoTracking()
                 .Include(p => p.Category)
-                .Include(p => p.Supplier) 
+                .Include(p => p.Supplier)
                 .FirstOrDefaultAsync(m => m.Id == id);
 
             if (Product is null) return NotFound();

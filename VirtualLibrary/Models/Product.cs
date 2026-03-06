@@ -42,7 +42,7 @@ namespace VirtualLibrary.Models
 
         [StringLength(50)]
         [Display(Name = "PDF Source")]
-        public string? PdfSource { get; set; } 
+        public string? PdfSource { get; set; }
 
         public int? CategoryId { get; set; }
         public Category? Category { get; set; }

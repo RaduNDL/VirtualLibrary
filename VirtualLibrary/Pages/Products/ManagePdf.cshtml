@@ -12,7 +12,9 @@
     <div class="mgmt-container">
         <header class="mgmt-header flex-between">
             <div>
-                <a asp-page="./Details" asp-route-id="@Model.Product!.Id" class="back-link"><i class='bx bx-left-arrow-alt'></i> Back to Book</a>
+                <a asp-page="./Details" asp-route-id="@Model.Product!.Id" class="back-link">
+                    <i class='bx bx-left-arrow-alt'></i> Back to Book
+                </a>
                 <h2 class="mt-2">Manage PDF Content</h2>
             </div>
         </header>
@@ -27,7 +29,7 @@
         <div class="pdf-book-summary mb-4">
             <div class="summary-text">
                 <h4>@Model.Product!.Title</h4>
-                <p>@(@Model.Product.Author ?? "Unknown Author")</p>
+                <p>@(Model.Product.Author ?? "Unknown Author")</p>
             </div>
 
             @if (Model.Product.HasPdfAvailable)
@@ -56,6 +58,7 @@
         </div>
 
         <div class="pdf-actions-grid">
+
             <div class="action-card primary-border">
                 <div class="card-title-bar primary-bg">
                     <i class='bx bx-search-alt'></i> Open Library Search
@@ -65,7 +68,7 @@
                     <form method="post" asp-page-handler="SearchOpenLibrary">
                         <input type="hidden" name="productId" value="@Model.Product!.Id" />
                         <button type="submit" class="btn-full-primary">
-                            Search & Fetch
+                            Search &amp; Fetch
                         </button>
                     </form>
                 </div>
@@ -92,6 +95,27 @@
                 </div>
             </div>
 
+            <div class="action-card" style="border: 2px solid #c7d2fe; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+                <div class="card-title-bar" style="background: #4f46e5; color: #fff; padding: 15px 20px; font-weight: 600; display: flex; align-items: center; gap: 10px;">
+                    <i class='bx bx-link'></i> Download from URL
+                </div>
+                <div class="card-content">
+                    <p>Paste a direct PDF link and it will be downloaded automatically.</p>
+                    <form method="post" asp-page-handler="DownloadUrl">
+                        <input type="hidden" name="productId" value="@Model.Product!.Id" />
+                        <div style="margin-bottom: 12px;">
+                            <label style="font-size:13px; font-weight:500; color:#86868b; display:block; margin-bottom:6px;">PDF URL</label>
+                            <input type="url" name="pdfUrl"
+                                   placeholder="https://www.gutenberg.org/files/1342/1342-pdf.pdf"
+                                   style="width:100%; border:1.5px solid #e5e5ea; border-radius:10px; padding:10px 14px; font-size:14px; outline:none; box-sizing:border-box;" />
+                        </div>
+                        <button type="submit" class="btn-full-primary">
+                            Download &amp; Save
+                        </button>
+                    </form>
+                </div>
+            </div>
+
             @if (Model.Product.HasPdfAvailable)
             {
                 <div class="action-card danger-border">
@@ -109,6 +133,7 @@
                     </div>
                 </div>
             }
+
         </div>
     </div>
 </div>

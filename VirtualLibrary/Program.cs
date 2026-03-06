@@ -36,7 +36,7 @@ builder.Services.ConfigureApplicationCookie(options =>
 
 builder.Services.Configure<FormOptions>(options =>
 {
-    options.MultipartBodyLengthLimit = 104857600; 
+    options.MultipartBodyLengthLimit = 104857600;
 });
 
 builder.WebHost.ConfigureKestrel(options =>
@@ -50,11 +50,20 @@ builder.Services.AddRazorPages()
 #endif
     ;
 
-builder.Services.AddHttpClient();
-builder.Services.AddHttpClient<PdfService>();
+builder.Services.AddControllers();
+
+builder.Services.AddHttpClient("PdfClient")
+    .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+    {
+        AllowAutoRedirect = true,
+        MaxAutomaticRedirections = 10,
+        AutomaticDecompression = System.Net.DecompressionMethods.GZip | System.Net.DecompressionMethods.Deflate
+    });
+
+builder.Services.AddScoped<PdfService>();
 builder.Services.AddScoped<BookImporter>();
 builder.Services.AddScoped<AudiobookService>();
-builder.Services.AddScoped<PdfService>();
+builder.Services.AddHostedService<AutoPdfBackgroundService>();
 
 var app = builder.Build();
 
@@ -83,7 +92,7 @@ using (var scope = app.Services.CreateScope())
         }
 
         const string adminEmail = "admin@gmail.com";
-        const string adminPassword = "Admin123!";
+        const string adminPassword = "Parola123!";
 
         var adminUser = await userManager.FindByEmailAsync(adminEmail);
         if (adminUser == null)
@@ -125,6 +134,7 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
+
 var audioBooks = Path.Combine(app.Environment.WebRootPath, "audiobooks");
 var pdfs = Path.Combine(app.Environment.WebRootPath, "pdfs");
 var uploads = Path.Combine(app.Environment.WebRootPath, "uploads", "books");
@@ -144,5 +154,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapRazorPages();
+app.MapControllers();
 
 app.Run();

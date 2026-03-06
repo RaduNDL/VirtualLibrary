@@ -5,7 +5,6 @@
 }
 
 <div class="container mt-4">
-    <!-- Hero Section -->
     <div class="p-5 mb-4 rounded-3 bg-primary text-white">
         <h1 class="display-5 fw-bold mb-3">🎧 My Audiobooks</h1>
         <p class="lead mb-4">Generate and manage your personal audiobook library</p>
@@ -26,7 +25,6 @@
         </div>
     </div>
 
-    <!-- Status Message -->
     @if (!string.IsNullOrEmpty(Model.StatusMessage))
     {
         <div class="alert alert-info alert-dismissible fade show" role="alert">
@@ -35,7 +33,6 @@
         </div>
     }
 
-    <!-- Empty State -->
     @if (!Model.Products.Any())
     {
         <div class="text-center py-5">
@@ -81,7 +78,6 @@
                                 <span class="badge bg-light text-dark mb-3">@product.Category.Name</span>
                             }
 
-                            <!-- Status Section -->
                             <div class="mt-3 pt-3 border-top">
                                 @if (audiobook == null)
                                 {
@@ -127,7 +123,6 @@
                                 }
                             </div>
 
-                            <!-- Actions -->
                             <div class="mt-3 pt-3 border-top">
                                 @if (audiobook == null || audiobook.Status == "Failed")
                                 {

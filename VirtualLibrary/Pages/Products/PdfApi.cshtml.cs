@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using VirtualLibrary.Data;
+using VirtualLibrary.Models;
 using VirtualLibrary.Services;
 
 namespace VirtualLibrary.Pages.Products
@@ -40,6 +41,52 @@ namespace VirtualLibrary.Pages.Products
                 hasPdf = product.HasPdfAvailable,
                 pdfPath = product.PdfFilePath,
                 pdfSource = product.PdfSource
+            });
+        }
+
+        [AllowAnonymous]
+        [RequestSizeLimit(104_857_600)]
+        public async Task<IActionResult> OnPostAutoCreateFromPdfAsync(IFormFile? pdfFile)
+        {
+            if (pdfFile == null || pdfFile.Length == 0)
+                return new JsonResult(new { error = "No file provided." }) { StatusCode = 400 };
+
+            var tempPath = Path.GetTempFileName();
+            using (var stream = System.IO.File.Create(tempPath))
+            {
+                await pdfFile.CopyToAsync(stream);
+            }
+
+            var extractedText = await _pdfService.ExtractTextAsync(tempPath);
+            var title = Path.GetFileNameWithoutExtension(pdfFile.FileName);
+
+            var product = new Product
+            {
+                Title = title.Length > 200 ? title.Substring(0, 200) : title,
+                Author = "Unknown",
+                Description = extractedText.Length > 4000 ? extractedText.Substring(0, 4000) : extractedText,
+                Price = 0.0m,
+                Stock = 1,
+                CreatedAtUtc = DateTime.UtcNow
+            };
+
+            _context.Products.Add(product);
+            await _context.SaveChangesAsync();
+
+            var savedPath = await _pdfService.UploadPdfAsync(product.Id, pdfFile);
+            product.PdfFilePath = savedPath;
+            product.PdfSource = "API-AutoCreate";
+            await _context.SaveChangesAsync();
+
+            if (System.IO.File.Exists(tempPath))
+                System.IO.File.Delete(tempPath);
+
+            return new JsonResult(new
+            {
+                success = true,
+                productId = product.Id,
+                title = product.Title,
+                pdfPath = savedPath
             });
         }
 

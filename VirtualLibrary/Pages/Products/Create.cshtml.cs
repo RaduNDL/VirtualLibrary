@@ -82,6 +82,11 @@ namespace VirtualLibrary.Pages.Products
             return RedirectToPage("./Index");
         }
 
+        private async Task LoadLookupsAsync(int categoryId, object supplierId)
+        {
+            throw new NotImplementedException();
+        }
+
         private async Task LoadLookupsAsync(int? selectedCategoryId = null, int? selectedSupplierId = null)
         {
             var categories = await _context.Categories

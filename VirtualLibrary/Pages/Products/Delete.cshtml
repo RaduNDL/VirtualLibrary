@@ -1,38 +1,80 @@
-﻿@page
-@model VirtualLibrary.Pages.Products.DeleteModel
+﻿@page "{id:int}"
+@model VirtualLibrary.Pages.Products.DetailsModel
 @{
-    ViewData["Title"] = "Delete Book";
-    Layout = "~/Pages/Shared/_Layout.cshtml";
+    ViewData["Title"] = Model.Product.Title;
 }
 
-<link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
-<link rel="stylesheet" href="~/css/AdminProducts.css">
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-4">
+            @if (!string.IsNullOrEmpty(Model.Product.ImagePath))
+            {
+                <img src="@Model.Product.ImagePath" class="img-fluid rounded shadow" alt="@Model.Product.Title">
+            }
+            else
+            {
+                <div class="bg-light d-flex align-items-center justify-content-center rounded shadow" style="height: 400px;">
+                    <i class='bx bx-book-content' style="font-size: 5rem; color: #ccc;"></i>
+                </div>
+            }
+        </div>
+        <div class="col-md-8">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a asp-page="/Index">Home</a></li>
+                    <li class="breadcrumb-item active">@Model.Product.Category?.Name</li>
+                </ol>
+            </nav>
 
-<div class="mgmt-wrapper">
-    <div class="delete-confirmation-container">
-        <div class="delete-card">
-            <div class="delete-icon">
-                <i class='bx bx-book-bookmark'></i>
-            </div>
-            <h3>Delete this book?</h3>
-            <p>You are about to permanently delete <strong>"@Model.Product.Title"</strong>.</p>
+            <h1 class="display-5 fw-bold">@Model.Product.Title</h1>
+            <h4 class="text-muted mb-4">Author: @Model.Product.Author</h4>
 
-            <div class="delete-preview-box">
-                <img src="~/@Model.Product.ImagePath" alt="@Model.Product.Title" asp-append-version="true" onerror="this.src='/images/no-cover.svg';this.onerror=null;" />
-                <div class="preview-details">
-                    <span><strong>Author:</strong> @Model.Product.Author</span>
-                    <span><strong>ISBN:</strong> @Model.Product.Isbn</span>
-                    <span><strong>Category:</strong> @Model.Product.Category?.Name</span>
+            <div class="card mb-4 border-0 bg-light">
+                <div class="card-body">
+                    <h5 class="card-title fw-bold">Description</h5>
+                    <p class="card-text">@Model.Product.Description</p>
                 </div>
             </div>
 
-            <form method="post" class="delete-form mt-4">
-                <input type="hidden" asp-for="Product.Id" />
-                <button type="submit" class="btn-confirm-delete">
-                    <i class='bx bx-trash'></i> Confirm Deletion
-                </button>
-                <a asp-page="./Index" class="btn-keep">Cancel</a>
-            </form>
+            <div class="d-flex align-items-center gap-3 mb-4">
+                <h2 class="text-primary mb-0">@Model.Product.Price.ToString("C")</h2>
+                @if (Model.Product.Stock > 0)
+                {
+                    <span class="badge bg-success">In Stock (@Model.Product.Stock)</span>
+                }
+                else
+                {
+                    <span class="badge bg-danger">Out of Stock</span>
+                }
+            </div>
+
+            <div class="d-flex gap-2">
+                <form method="post" asp-page="/Cart/Index" asp-page-handler="AddToCart">
+                    <input type="hidden" name="id" value="@Model.Product.Id" />
+                    <button type="submit" class="btn btn-primary btn-lg px-5 shadow-sm @(Model.Product.Stock <= 0 ? "disabled" : "")">
+                        <i class='bx bxs-cart-add'></i> Add to Cart
+                    </button>
+                </form>
+
+                @if (Model.Product.HasPdfAvailable)
+                {
+                    <a asp-page="./ReadPdf" asp-route-id="@Model.Product.Id" class="btn btn-dark btn-lg px-5 shadow-sm">
+                        <i class='bx bxs-book-open'></i> Start Reading
+                    </a>
+                }
+            </div>
+
+            @if (User.IsInRole("Administrator"))
+            {
+                <div class="mt-5 pt-3 border-top">
+                    <p class="text-danger small fw-bold text-uppercase">Admin Controls</p>
+                    <div class="btn-group">
+                        <a asp-page="./Edit" asp-route-id="@Model.Product.Id" class="btn btn-outline-secondary">Edit Product</a>
+                        <a asp-page="./ManagePdf" asp-route-id="@Model.Product.Id" class="btn btn-outline-secondary">Manage PDF/Media</a>
+                        <a asp-page="./Delete" asp-route-id="@Model.Product.Id" class="btn btn-outline-danger">Delete</a>
+                    </div>
+                </div>
+            }
         </div>
     </div>
 </div>

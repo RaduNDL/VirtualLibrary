@@ -12,8 +12,8 @@ using VirtualLibrary.Data;
 namespace VirtualLibrary.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260305144723_Supplier")]
-    partial class Supplier
+    [Migration("20260306094125_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -507,13 +507,13 @@ namespace VirtualLibrary.Migrations
                         .HasColumnType("nvarchar(300)");
 
                     b.Property<string>("ContactInfo")
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.HasKey("SupplierId");
 

@@ -1,7 +1,7 @@
 ﻿@page "{id:int}"
 @model VirtualLibrary.Pages.Products.ReadPdfModel
 @{
-    ViewData["Title"] = $"Citeste: {Model.Product?.Title}";
+    ViewData["Title"] = $"Read: {Model.Product?.Title}";
     Layout = "~/Pages/Shared/_Layout.cshtml";
 }
 
@@ -11,14 +11,16 @@
 <div class="reader-wrapper">
     <header class="reader-header">
         <a asp-page="./Details" asp-route-id="@Model.Product!.Id" class="back-link">
-            <i class='bx bx-left-arrow-alt'></i> Inapoi la carte
+            <i class='bx bx-left-arrow-alt'></i> Back to Book
         </a>
         <h2><i class='bx bxs-file-pdf'></i> @Model.Product!.Title</h2>
         @if (!string.IsNullOrWhiteSpace(Model.Product.Author))
         {
-            <span class="author-sub">de @Model.Product.Author</span>
+            <span class="author-sub">by @Model.Product.Author</span>
         }
     </header>
+
+    @Html.AntiForgeryToken()
 
     @if (Model.Product.HasPdfAvailable)
     {
@@ -28,29 +30,43 @@
                     title="@Model.Product.Title"
                     allowfullscreen>
                 <p>
-                    Browserul tau nu suporta iframe-uri PDF.
-                    <a href="/@Model.Product.PdfFilePath" target="_blank">Descarca PDF-ul</a>.
+                    Your browser does not support PDF iframes.
+                    <a href="/@Model.Product.PdfFilePath" target="_blank">Download the PDF</a>.
                 </p>
             </iframe>
         </div>
         <div class="pdf-actions-bar">
-            <a href="/@Model.Product.PdfFilePath" target="_blank" class="btn-download">
-                <i class='bx bx-download'></i> Descarca PDF
+            <a href="/@Model.Product.PdfFilePath" download class="btn-download">
+                <i class='bx bx-download'></i> Download PDF
             </a>
             <a href="/@Model.Product.PdfFilePath" target="_blank" class="btn-fullscreen">
-                <i class='bx bx-fullscreen'></i> Deschide in tab nou
+                <i class='bx bx-fullscreen'></i> Open in New Tab
             </a>
+            <button id="generateAudioBtn" data-product-id="@Model.Product.Id" class="btn-fullscreen" style="background: #6f42c1; border: none; cursor: pointer;">
+                <i class='bx bx-headphone'></i> Listen as Audiobook
+            </button>
+        </div>
+
+        <div id="audioPlayerContainer" style="display: none; margin-top: 15px; width: 100%; background: #fff; padding: 15px; border-radius: 10px; border: 1px solid #dee2e6;">
+            <h5 style="margin-bottom: 10px;"><i class='bx bx-volume-full'></i> Audiobook Player</h5>
+            <audio id="pdfAudioPlayer" controls style="width: 100%;">
+                Your browser does not support the audio element.
+            </audio>
         </div>
     }
     else
     {
         <div class="no-pdf-box">
             <i class='bx bx-error-circle'></i>
-            <h3>PDF indisponibil</h3>
-            <p>Aceasta carte nu are inca un PDF asociat.</p>
+            <h3>PDF Not Available</h3>
+            <p>This book does not have a PDF associated yet.</p>
             <a asp-page="./Details" asp-route-id="@Model.Product!.Id" class="btn-back">
-                Inapoi la detalii
+                Back to Details
             </a>
         </div>
     }
 </div>
+
+@section Scripts {
+    <script src="~/js/pdf-viewer.js"></script>
+}

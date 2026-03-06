@@ -18,7 +18,7 @@ namespace VirtualLibrary.Models
         public string? AudioFilePath { get; set; }
 
         [StringLength(50)]
-        public string Status { get; set; } = "Pending"; 
+        public string Status { get; set; } = "Pending";
 
         public TimeSpan? Duration { get; set; }
 

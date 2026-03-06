@@ -52,8 +52,6 @@ namespace VirtualLibrary.Pages.Products
                 if (product == null)
                     return NotFound();
 
-                StatusMessage = "⏳ Searching Open Library...";
-
                 var pdfUrl = await _pdfService.SearchOpenLibraryPdfAsync(
                     product.Isbn,
                     product.Title,
@@ -61,35 +59,31 @@ namespace VirtualLibrary.Pages.Products
 
                 if (string.IsNullOrEmpty(pdfUrl))
                 {
-                    StatusMessage = "✗ No PDF found in Open Library for this book.";
+                    StatusMessage = "No PDF found in Open Library for this book.";
                 }
                 else
                 {
-                    var savedPath = await _pdfService.DownloadAndSavePdfAsync(
-                        productId,
-                        pdfUrl,
-                        "OpenLibrary");
+                    var savedPath = await _pdfService.DownloadAndSavePdfAsync(productId, pdfUrl, "OpenLibrary");
 
                     if (!string.IsNullOrEmpty(savedPath))
                     {
                         product.PdfFilePath = savedPath;
                         product.PdfSource = "OpenLibrary";
                         await _context.SaveChangesAsync();
-                        StatusMessage = "✓ PDF found and downloaded successfully from Open Library!";
+                        StatusMessage = "PDF found and downloaded successfully from Open Library!";
                     }
                     else
                     {
-                        StatusMessage = "✗ PDF found but failed to download.";
+                        StatusMessage = "PDF found but failed to download.";
                     }
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Error: {ex.Message}");
-                StatusMessage = $"✗ Error: {ex.Message}";
+                _logger.LogError(ex, "Error searching Open Library for product {ProductId}", productId);
+                StatusMessage = $"Error: {ex.Message}";
             }
 
-            ProductId = productId;
             return RedirectToPage(new { id = productId });
         }
 
@@ -103,8 +97,7 @@ namespace VirtualLibrary.Pages.Products
 
                 if (pdfFile == null)
                 {
-                    StatusMessage = "✗ Please select a PDF file.";
-                    ProductId = productId;
+                    StatusMessage = "Please select a PDF file.";
                     return RedirectToPage(new { id = productId });
                 }
 
@@ -112,23 +105,59 @@ namespace VirtualLibrary.Pages.Products
 
                 if (string.IsNullOrEmpty(savedPath))
                 {
-                    StatusMessage = "✗ Failed to upload PDF. Make sure it's a valid PDF file (max 100 MB).";
+                    StatusMessage = "Failed to upload PDF. Make sure it is a valid PDF file (max 100 MB).";
                 }
                 else
                 {
                     product.PdfFilePath = savedPath;
                     product.PdfSource = "Manual";
                     await _context.SaveChangesAsync();
-                    StatusMessage = "✓ PDF uploaded successfully!";
+                    StatusMessage = "PDF uploaded successfully!";
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Error: {ex.Message}");
-                StatusMessage = $"✗ Error: {ex.Message}";
+                _logger.LogError(ex, "Error uploading PDF for product {ProductId}", productId);
+                StatusMessage = $"Error: {ex.Message}";
             }
 
-            ProductId = productId;
+            return RedirectToPage(new { id = productId });
+        }
+
+        public async Task<IActionResult> OnPostDownloadUrlAsync(int productId, string? pdfUrl)
+        {
+            try
+            {
+                var product = await _context.Products.FirstOrDefaultAsync(p => p.Id == productId);
+                if (product == null)
+                    return NotFound();
+
+                if (string.IsNullOrWhiteSpace(pdfUrl))
+                {
+                    StatusMessage = "Please enter a valid PDF URL.";
+                    return RedirectToPage(new { id = productId });
+                }
+
+                var savedPath = await _pdfService.DownloadAndSavePdfAsync(productId, pdfUrl, "URL");
+
+                if (string.IsNullOrEmpty(savedPath))
+                {
+                    StatusMessage = "Failed to download PDF. Make sure the URL points directly to a .pdf file.";
+                }
+                else
+                {
+                    product.PdfFilePath = savedPath;
+                    product.PdfSource = "URL";
+                    await _context.SaveChangesAsync();
+                    StatusMessage = "PDF downloaded and saved successfully!";
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error downloading PDF from URL for product {ProductId}", productId);
+                StatusMessage = $"Error: {ex.Message}";
+            }
+
             return RedirectToPage(new { id = productId });
         }
 
@@ -138,16 +167,15 @@ namespace VirtualLibrary.Pages.Products
             {
                 var success = await _pdfService.DeletePdfAsync(productId);
                 StatusMessage = success
-                    ? "✓ PDF deleted successfully."
-                    : "✗ Failed to delete PDF.";
+                    ? "PDF deleted successfully."
+                    : "Failed to delete PDF.";
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Error: {ex.Message}");
-                StatusMessage = $"✗ Error: {ex.Message}";
+                _logger.LogError(ex, "Error deleting PDF for product {ProductId}", productId);
+                StatusMessage = $"Error: {ex.Message}";
             }
 
-            ProductId = productId;
             return RedirectToPage(new { id = productId });
         }
     }
