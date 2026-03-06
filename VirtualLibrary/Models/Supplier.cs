@@ -9,11 +9,11 @@ namespace VirtualLibrary.Models
         public int SupplierId { get; set; }
 
         [Required(ErrorMessage = "Supplier name is required.")]
-        [StringLength(500, MinimumLength = 2, ErrorMessage = "Name must be between 2 and 100 characters.")]
+        [StringLength(500, MinimumLength = 2, ErrorMessage = "Name must be between 2 and 500 characters.")]
         [Display(Name = "Supplier Name")]
         public string Name { get; set; } = string.Empty;
 
-        [StringLength(200, MinimumLength = 7, ErrorMessage = "Phone number must be between 7 and 20 characters.")]
+        [StringLength(200, ErrorMessage = "Contact info cannot exceed 200 characters.")]
         [Display(Name = "Contact Info")]
         public string? ContactInfo { get; set; }
 

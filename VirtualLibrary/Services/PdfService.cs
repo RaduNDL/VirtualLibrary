@@ -1,11 +1,8 @@
-﻿
-using iText.Kernel.Pdf;
+﻿using iText.Kernel.Pdf;
 using iText.Kernel.Pdf.Canvas.Parser;
 using iText.Kernel.Pdf.Canvas.Parser.Listener;
 using System.Net.Http;
-using System.Reflection.PortableExecutable;
 using System.Text.Json;
-using UglyToad.PdfPig;
 
 namespace VirtualLibrary.Services
 {
@@ -13,63 +10,242 @@ namespace VirtualLibrary.Services
     {
         private readonly IWebHostEnvironment _env;
         private readonly IHttpClientFactory _httpClientFactory;
+        private readonly ILogger<PdfService> _logger;
 
-        public PdfService(IWebHostEnvironment env, IHttpClientFactory httpClientFactory)
+        public PdfService(IWebHostEnvironment env, IHttpClientFactory httpClientFactory, ILogger<PdfService> logger)
         {
             _env = env;
             _httpClientFactory = httpClientFactory;
+            _logger = logger;
         }
 
+        /// <summary>
+        /// Search Open Library for a downloadable PDF link.
+        /// Tries multiple strategies: ISBN lookup, then title+author search.
+        /// </summary>
         public async Task<string> SearchOpenLibraryPdfAsync(string? isbn, string title, string author)
         {
             var client = _httpClientFactory.CreateClient("PdfClient");
-            string query = !string.IsNullOrEmpty(isbn)
-                ? $"isbn={isbn}"
-                : $"title={Uri.EscapeDataString(title)}&author={Uri.EscapeDataString(author)}";
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("VirtualLibrary/1.0 (Student Project)");
 
+            // ── Strategy 1: Search by ISBN first (most accurate) ──
+            if (!string.IsNullOrEmpty(isbn))
+            {
+                var url = await TryOpenLibrarySearchAsync(client, $"isbn={isbn}", title);
+                if (!string.IsNullOrEmpty(url)) return url;
+            }
+
+            // ── Strategy 2: Search by title + author ──
+            var query = $"title={Uri.EscapeDataString(title)}";
+            if (!string.IsNullOrWhiteSpace(author))
+                query += $"&author={Uri.EscapeDataString(author)}";
+
+            var url2 = await TryOpenLibrarySearchAsync(client, query, title);
+            if (!string.IsNullOrEmpty(url2)) return url2;
+
+            // ── Strategy 3: Search by title only ──
+            var url3 = await TryOpenLibrarySearchAsync(client, $"title={Uri.EscapeDataString(title)}", title);
+            return url3 ?? string.Empty;
+        }
+
+        private async Task<string?> TryOpenLibrarySearchAsync(HttpClient client, string query, string title)
+        {
             try
             {
-                var response = await client.GetAsync($"https://openlibrary.org/search.json?{query}");
-                if (!response.IsSuccessStatusCode) return string.Empty;
+                var searchUrl = $"https://openlibrary.org/search.json?{query}&limit=5&fields=ia,title";
+                _logger.LogInformation("Open Library search: {Url}", searchUrl);
+
+                var response = await client.GetAsync(searchUrl);
+                if (!response.IsSuccessStatusCode)
+                {
+                    _logger.LogWarning("Open Library search failed: {Status}", response.StatusCode);
+                    return null;
+                }
 
                 var content = await response.Content.ReadAsStringAsync();
                 using var doc = JsonDocument.Parse(content);
                 var root = doc.RootElement;
 
-                if (root.GetProperty("numFound").GetInt32() > 0)
+                var numFound = root.GetProperty("numFound").GetInt32();
+                _logger.LogInformation("Open Library found {Count} results for '{Title}'", numFound, title);
+
+                if (numFound == 0) return null;
+
+                var docs = root.GetProperty("docs");
+                foreach (var bookDoc in docs.EnumerateArray())
                 {
-                    var firstDoc = root.GetProperty("docs")[0];
-                    if (firstDoc.TryGetProperty("ia", out var iaArray) && iaArray.GetArrayLength() > 0)
+                    if (!bookDoc.TryGetProperty("ia", out var iaArray) || iaArray.GetArrayLength() == 0)
+                        continue;
+
+                    // Try each Internet Archive identifier
+                    foreach (var iaItem in iaArray.EnumerateArray())
                     {
-                        var identifier = iaArray[0].GetString();
-                        return $"https://archive.org/download/{identifier}/{identifier}.pdf";
+                        var identifier = iaItem.GetString();
+                        if (string.IsNullOrEmpty(identifier)) continue;
+
+                        // ── Try multiple PDF URL patterns that Archive.org uses ──
+                        var urls = new[]
+                        {
+                            $"https://archive.org/download/{identifier}/{identifier}.pdf",
+                            $"https://archive.org/download/{identifier}/{identifier}_text.pdf",
+                        };
+
+                        foreach (var pdfUrl in urls)
+                        {
+                            if (await VerifyUrlIsAccessibleAsync(client, pdfUrl))
+                            {
+                                _logger.LogInformation("✓ Verified PDF URL: {Url}", pdfUrl);
+                                return pdfUrl;
+                            }
+                        }
+
+                        // ── Try to find any .pdf file in the Archive.org metadata ──
+                        var metaUrl = $"https://archive.org/metadata/{identifier}/files";
+                        try
+                        {
+                            var metaResp = await client.GetAsync(metaUrl);
+                            if (metaResp.IsSuccessStatusCode)
+                            {
+                                var metaJson = await metaResp.Content.ReadAsStringAsync();
+                                using var metaDoc = JsonDocument.Parse(metaJson);
+
+                                if (metaDoc.RootElement.TryGetProperty("result", out var files))
+                                {
+                                    foreach (var file in files.EnumerateArray())
+                                    {
+                                        if (file.TryGetProperty("name", out var nameProp))
+                                        {
+                                            var fileName = nameProp.GetString();
+                                            if (fileName != null && fileName.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+                                            {
+                                                var realPdfUrl = $"https://archive.org/download/{identifier}/{Uri.EscapeDataString(fileName)}";
+                                                _logger.LogInformation("✓ Found PDF in metadata: {Url}", realPdfUrl);
+                                                return realPdfUrl;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogDebug(ex, "Metadata check failed for {Id}", identifier);
+                        }
                     }
                 }
             }
-            catch { }
-            return string.Empty;
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Error searching Open Library");
+            }
+
+            return null;
         }
 
+        /// <summary>
+        /// Verify a URL is accessible and returns a PDF-like content type (HEAD request).
+        /// </summary>
+        private async Task<bool> VerifyUrlIsAccessibleAsync(HttpClient client, string url)
+        {
+            try
+            {
+                using var request = new HttpRequestMessage(HttpMethod.Head, url);
+                using var response = await client.SendAsync(request);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    _logger.LogDebug("HEAD {Url} → {Status}", url, response.StatusCode);
+                    return false;
+                }
+
+                var contentType = response.Content.Headers.ContentType?.MediaType ?? "";
+                var contentLength = response.Content.Headers.ContentLength ?? 0;
+
+                // Must be PDF content type and at least 10KB (real PDFs are bigger)
+                var isPdf = contentType.Contains("pdf", StringComparison.OrdinalIgnoreCase)
+                         || contentType.Contains("octet-stream", StringComparison.OrdinalIgnoreCase);
+                var isLargeEnough = contentLength > 10_000;
+
+                _logger.LogDebug("HEAD {Url} → {Type}, {Size} bytes, isPdf={IsPdf}", url, contentType, contentLength, isPdf && isLargeEnough);
+
+                return isPdf && isLargeEnough;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Download a PDF from a URL and save it locally.
+        /// </summary>
         public async Task<string> DownloadAndSavePdfAsync(int productId, string url, string source)
         {
             var client = _httpClientFactory.CreateClient("PdfClient");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("VirtualLibrary/1.0 (Student Project)");
+            client.Timeout = TimeSpan.FromMinutes(5); // PDFs can be large
+
             try
             {
-                var response = await client.GetAsync(url);
-                if (!response.IsSuccessStatusCode) return string.Empty;
+                _logger.LogInformation("Downloading PDF: {Url}", url);
 
+                var response = await client.GetAsync(url);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    _logger.LogWarning("PDF download failed: {Status} from {Url}", response.StatusCode, url);
+                    return string.Empty;
+                }
+
+                var data = await response.Content.ReadAsByteArrayAsync();
+                _logger.LogInformation("Downloaded {Size} bytes from {Url}", data.Length, url);
+
+                // Must be at least 1KB to be a real PDF
+                if (data.Length < 1024)
+                {
+                    _logger.LogWarning("Downloaded file too small ({Size} bytes), probably not a real PDF", data.Length);
+                    return string.Empty;
+                }
+
+                // Check if it starts with %PDF OR if content-type was pdf (some servers gzip it)
+                var contentType = response.Content.Headers.ContentType?.MediaType ?? "";
+                var startsWithPdf = data.Length >= 4 && data[0] == 0x25 && data[1] == 0x50 && data[2] == 0x44 && data[3] == 0x46;
+                var isContentTypePdf = contentType.Contains("pdf", StringComparison.OrdinalIgnoreCase)
+                                    || contentType.Contains("octet-stream", StringComparison.OrdinalIgnoreCase);
+
+                if (!startsWithPdf && !isContentTypePdf)
+                {
+                    // Check if it's HTML (common error page from Archive.org)
+                    var firstBytes = System.Text.Encoding.UTF8.GetString(data, 0, Math.Min(200, data.Length));
+                    if (firstBytes.Contains("<html", StringComparison.OrdinalIgnoreCase) ||
+                        firstBytes.Contains("<!DOCTYPE", StringComparison.OrdinalIgnoreCase))
+                    {
+                        _logger.LogWarning("Downloaded HTML instead of PDF from {Url}", url);
+                        return string.Empty;
+                    }
+
+                    _logger.LogWarning("File doesn't look like a PDF (starts with: {Start}, content-type: {Type})",
+                        BitConverter.ToString(data, 0, Math.Min(4, data.Length)), contentType);
+                    return string.Empty;
+                }
+
+                // ── Save to disk ──
                 var pdfDir = Path.Combine(_env.WebRootPath, "pdfs");
                 if (!Directory.Exists(pdfDir)) Directory.CreateDirectory(pdfDir);
 
                 var fileName = $"{productId}_auto_{Guid.NewGuid():N}.pdf";
                 var filePath = Path.Combine(pdfDir, fileName);
 
-                var data = await response.Content.ReadAsByteArrayAsync();
                 await File.WriteAllBytesAsync(filePath, data);
+                _logger.LogInformation("✓ PDF saved: {Path} ({Size} bytes)", filePath, data.Length);
 
                 return Path.Combine("pdfs", fileName).Replace('\\', '/');
             }
-            catch { return string.Empty; }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error downloading PDF from {Url}", url);
+                return string.Empty;
+            }
         }
 
         public async Task<string> UploadPdfAsync(int productId, IFormFile file)
@@ -87,6 +263,7 @@ namespace VirtualLibrary.Services
                 await file.CopyToAsync(stream);
             }
 
+            _logger.LogInformation("✓ PDF uploaded: {Path} ({Size} bytes)", filePath, file.Length);
             return Path.Combine("pdfs", fileName).Replace('\\', '/');
         }
 
@@ -113,9 +290,28 @@ namespace VirtualLibrary.Services
             });
         }
 
-        internal async Task<bool> DeletePdfAsync(int productId)
+        public async Task<bool> DeletePdfAsync(int productId)
         {
-            throw new NotImplementedException();
+            await Task.CompletedTask;
+            var pdfDir = Path.Combine(_env.WebRootPath, "pdfs");
+            if (!Directory.Exists(pdfDir)) return false;
+
+            var files = Directory.GetFiles(pdfDir, $"{productId}_*");
+            if (files.Length == 0) return false;
+
+            foreach (var file in files)
+            {
+                try
+                {
+                    File.Delete(file);
+                    _logger.LogInformation("Deleted PDF: {Path}", file);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to delete: {Path}", file);
+                }
+            }
+            return true;
         }
     }
 }

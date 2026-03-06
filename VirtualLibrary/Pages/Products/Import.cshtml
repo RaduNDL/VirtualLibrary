@@ -18,13 +18,17 @@
         <div class="form-card">
             <div class="import-info-box mb-4">
                 <i class='bx bx-info-circle'></i>
-                <p>Import books automatically by subject keyword. This process might take a few moments depending on the count.</p>
+                <p>
+                    Import books automatically by subject keyword from <strong>Google Books API</strong>.
+                    PDFs will be automatically searched on <strong>Open Library</strong> after import.
+                    This process might take a few moments depending on the count.
+                </p>
             </div>
 
-            <form method="post" class="row g-4">
+            <form method="post" class="row g-4" id="importForm">
                 <div class="col-md-8">
                     <div class="input-group-modern">
-                        <label asp-for="Subject">Subject (ex: fiction, history, computers)</label>
+                        <label asp-for="Subject">Subject (ex: fiction, history, computers, science)</label>
                         <input asp-for="Subject" placeholder="Enter keyword..." />
                     </div>
                 </div>
@@ -35,12 +39,33 @@
                     </div>
                 </div>
                 <div class="col-12 form-actions mt-2">
-                    <button type="submit" class="btn-save">
+                    <button type="submit" class="btn-save" id="importBtn">
                         <i class='bx bx-cloud-download'></i> Run Import
                     </button>
                     <a asp-page="./Index" class="btn-cancel">Cancel</a>
                 </div>
             </form>
+
+            <div id="loadingOverlay" style="display:none; margin-top: 20px; padding: 30px; text-align: center; background: #f0f7ff; border-radius: 12px; border: 2px solid #3b82f6;">
+                <div style="margin-bottom: 15px;">
+                    <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+                <h4 style="color: #1e40af;">⏳ Importing Books...</h4>
+                <p style="color: #64748b;">
+                    Fetching books from Google Books API and searching for PDFs on Open Library.<br>
+                    This may take <strong>30-90 seconds</strong> depending on the count. Please don't close this page.
+                </p>
+            </div>
         </div>
     </div>
 </div>
+
+<script>
+    document.getElementById('importForm').addEventListener('submit', function () {
+        document.getElementById('importBtn').disabled = true;
+        document.getElementById('importBtn').innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Importing...';
+        document.getElementById('loadingOverlay').style.display = 'block';
+    });
+</script>
