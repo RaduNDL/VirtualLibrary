@@ -24,7 +24,7 @@ namespace VirtualLibrary.Pages.Audiobooks
 
         public Product? Product { get; set; }
         public Audiobook? Audiobook { get; set; }
-        public string ExtractedText { get; set; } = string.Empty;
+        public string? ExtractedText { get; set; }
 
         public async Task<IActionResult> OnGetAsync(int productId)
         {
@@ -34,7 +34,7 @@ namespace VirtualLibrary.Pages.Audiobooks
                 return NotFound();
 
             Audiobook = await _context.Audiobooks
-                .FirstOrDefaultAsync(a => a.ProductId == productId && a.Status == "Completed");
+                .FirstOrDefaultAsync(a => a.ProductId == productId && a.Status == AudiobookStatus.Completed);
 
             if (!string.IsNullOrWhiteSpace(Product.PdfFilePath))
             {

@@ -36,10 +36,7 @@ namespace VirtualLibrary.Pages.Products
         public async Task<IActionResult> OnGetAsync(int id)
         {
             Product = await _context.Products.FirstOrDefaultAsync(p => p.Id == id);
-
-            if (Product == null)
-                return NotFound();
-
+            if (Product == null) return NotFound();
             ProductId = id;
             return Page();
         }
@@ -49,13 +46,10 @@ namespace VirtualLibrary.Pages.Products
             try
             {
                 var product = await _context.Products.FirstOrDefaultAsync(p => p.Id == productId);
-                if (product == null)
-                    return NotFound();
+                if (product == null) return NotFound();
 
                 var pdfUrl = await _pdfService.SearchOpenLibraryPdfAsync(
-                    product.Isbn,
-                    product.Title,
-                    product.Author ?? "");
+                    product.Isbn, product.Title, product.Author ?? "");
 
                 if (string.IsNullOrEmpty(pdfUrl))
                 {
@@ -64,7 +58,6 @@ namespace VirtualLibrary.Pages.Products
                 else
                 {
                     var savedPath = await _pdfService.DownloadAndSavePdfAsync(productId, pdfUrl, "OpenLibrary");
-
                     if (!string.IsNullOrEmpty(savedPath))
                     {
                         product.PdfFilePath = savedPath;
@@ -92,8 +85,7 @@ namespace VirtualLibrary.Pages.Products
             try
             {
                 var product = await _context.Products.FirstOrDefaultAsync(p => p.Id == productId);
-                if (product == null)
-                    return NotFound();
+                if (product == null) return NotFound();
 
                 if (pdfFile == null)
                 {
@@ -102,7 +94,6 @@ namespace VirtualLibrary.Pages.Products
                 }
 
                 var savedPath = await _pdfService.UploadPdfAsync(productId, pdfFile);
-
                 if (string.IsNullOrEmpty(savedPath))
                 {
                     StatusMessage = "Failed to upload PDF. Make sure it is a valid PDF file (max 100 MB).";
@@ -129,8 +120,7 @@ namespace VirtualLibrary.Pages.Products
             try
             {
                 var product = await _context.Products.FirstOrDefaultAsync(p => p.Id == productId);
-                if (product == null)
-                    return NotFound();
+                if (product == null) return NotFound();
 
                 if (string.IsNullOrWhiteSpace(pdfUrl))
                 {
@@ -139,7 +129,6 @@ namespace VirtualLibrary.Pages.Products
                 }
 
                 var savedPath = await _pdfService.DownloadAndSavePdfAsync(productId, pdfUrl, "URL");
-
                 if (string.IsNullOrEmpty(savedPath))
                 {
                     StatusMessage = "Failed to download PDF. Make sure the URL points directly to a .pdf file.";
@@ -165,10 +154,21 @@ namespace VirtualLibrary.Pages.Products
         {
             try
             {
+                var product = await _context.Products.FirstOrDefaultAsync(p => p.Id == productId);
+                if (product == null) return NotFound();
+
                 var success = await _pdfService.DeletePdfAsync(productId);
-                StatusMessage = success
-                    ? "PDF deleted successfully."
-                    : "Failed to delete PDF.";
+                if (success)
+                {
+                    product.PdfFilePath = null;
+                    product.PdfSource = null;
+                    await _context.SaveChangesAsync();
+                    StatusMessage = "PDF deleted successfully.";
+                }
+                else
+                {
+                    StatusMessage = "Failed to delete PDF.";
+                }
             }
             catch (Exception ex)
             {

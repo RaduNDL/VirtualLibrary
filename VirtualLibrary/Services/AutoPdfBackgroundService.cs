@@ -29,11 +29,13 @@ namespace VirtualLibrary.Services
 
                     foreach (var book in booksWithoutPdf)
                     {
-                        var pdfUrl = await pdfService.SearchOpenLibraryPdfAsync(book.Isbn, book.Title, book.Author ?? "");
+                        var pdfUrl = await pdfService.SearchOpenLibraryPdfAsync(
+                            book.Isbn, book.Title, book.Author ?? "");
 
                         if (!string.IsNullOrEmpty(pdfUrl))
                         {
-                            var savedPath = await pdfService.DownloadAndSavePdfAsync(book.Id, pdfUrl, "Auto-Worker");
+                            var savedPath = await pdfService.DownloadAndSavePdfAsync(
+                                book.Id, pdfUrl, "Auto-Worker");
                             if (!string.IsNullOrEmpty(savedPath))
                             {
                                 book.PdfFilePath = savedPath;
@@ -50,9 +52,7 @@ namespace VirtualLibrary.Services
                         await Task.Delay(3000, stoppingToken);
                     }
                 }
-                catch
-                {
-                }
+                catch { }
 
                 await Task.Delay(TimeSpan.FromMinutes(2), stoppingToken);
             }

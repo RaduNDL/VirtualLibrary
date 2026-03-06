@@ -60,7 +60,7 @@ namespace VirtualLibrary.Services
                 var existingAudiobook = await _db.Audiobooks
                     .FirstOrDefaultAsync(a => a.ProductId == productId);
 
-                if (existingAudiobook != null && existingAudiobook.Status == "Completed")
+                if (existingAudiobook != null && existingAudiobook.Status == AudiobookStatus.Completed)
                 {
                     return existingAudiobook;
                 }
@@ -69,7 +69,7 @@ namespace VirtualLibrary.Services
                 if (existingAudiobook != null)
                 {
                     audiobook = existingAudiobook;
-                    audiobook.Status = "Processing";
+                    audiobook.Status = AudiobookStatus.Processing;
                     audiobook.ErrorMessage = null;
                 }
                 else
@@ -77,7 +77,7 @@ namespace VirtualLibrary.Services
                     audiobook = new Audiobook
                     {
                         ProductId = productId,
-                        Status = "Processing",
+                        Status = AudiobookStatus.Processing,
                         CreatedAtUtc = DateTime.UtcNow
                     };
                     _db.Audiobooks.Add(audiobook);
@@ -89,7 +89,7 @@ namespace VirtualLibrary.Services
 
                 if (string.IsNullOrWhiteSpace(textToSpeak))
                 {
-                    audiobook.Status = "Failed";
+                    audiobook.Status = AudiobookStatus.Rejected;
                     audiobook.ErrorMessage = "No text content available for audio generation";
                     await _db.SaveChangesAsync();
                     return audiobook;
@@ -99,7 +99,7 @@ namespace VirtualLibrary.Services
                 var audioFilePath = await SaveAudioFileAsync(productId, audioContent);
 
                 audiobook.AudioFilePath = audioFilePath;
-                audiobook.Status = "Completed";
+                audiobook.Status = AudiobookStatus.Completed;
                 audiobook.CompletedAtUtc = DateTime.UtcNow;
 
                 var wordCount = textToSpeak.Split(new[] { ' ', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries).Length;
@@ -114,7 +114,7 @@ namespace VirtualLibrary.Services
                 var audiobook = await _db.Audiobooks.FirstOrDefaultAsync(a => a.ProductId == productId);
                 if (audiobook != null)
                 {
-                    audiobook.Status = "Failed";
+                    audiobook.Status = AudiobookStatus.Failed;
                     audiobook.ErrorMessage = ex.Message;
                     await _db.SaveChangesAsync();
                 }

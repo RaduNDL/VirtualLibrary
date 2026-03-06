@@ -1,4 +1,5 @@
 ﻿@page "{productId:int}"
+@using VirtualLibrary.Models
 @model VirtualLibrary.Pages.Audiobooks.PdfViewerModel
 @{
     ViewData["Title"] = "PDF Viewer - " + Model.Product?.Title;
@@ -45,7 +46,7 @@
                 <small class="text-muted">@(Model.Product?.Author ?? "Unknown")</small>
             </div>
 
-            @if (Model.Audiobook?.Status == "Completed")
+            @if (Model.Audiobook?.Status == AudiobookStatus.Completed)
             {
                 <div class="ab-section mb-3">
                     <h6 class="fw-bold mb-2 pb-1 border-bottom">🎧 MP3 Audio</h6>

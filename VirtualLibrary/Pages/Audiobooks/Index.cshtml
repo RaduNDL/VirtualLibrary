@@ -1,4 +1,5 @@
 ﻿@page
+@using VirtualLibrary.Models
 @model VirtualLibrary.Pages.Audiobooks.IndexModel
 @{
     ViewData["Title"] = "My Audiobooks";
@@ -53,8 +54,8 @@
         @foreach (var product in Model.Products)
         {
             var audiobook = Model.AudiobookStatus[product.Id];
-            var isProcessing = audiobook?.Status == "Processing";
-            var isCompleted = audiobook?.Status == "Completed";
+            var isProcessing = audiobook?.Status == AudiobookStatus.Processing;
+            var isCompleted = audiobook?.Status == AudiobookStatus.Completed;
 
             <div class="card mb-3 shadow-sm">
                 <div class="card-body">
@@ -87,23 +88,35 @@
                                 }
                                 else
                                 {
-                                    @if (audiobook.Status == "Completed")
+                                    @if (audiobook.Status == AudiobookStatus.Completed)
                                     {
                                         <span class="badge bg-success">
                                             <i class="bi bi-check-circle"></i> @audiobook.Status
                                         </span>
                                     }
-                                    else if (audiobook.Status == "Processing")
+                                    else if (audiobook.Status == AudiobookStatus.Processing)
                                     {
                                         <span class="badge bg-info">
                                             <span class="spinner-border spinner-border-sm me-2" role="status"></span>
                                             @audiobook.Status
                                         </span>
                                     }
-                                    else if (audiobook.Status == "Failed")
+                                    else if (audiobook.Status == AudiobookStatus.Failed)
                                     {
                                         <span class="badge bg-danger">
                                             <i class="bi bi-exclamation-circle"></i> @audiobook.Status
+                                        </span>
+                                    }
+                                    else if (audiobook.Status == AudiobookStatus.Rejected)
+                                    {
+                                        <span class="badge bg-secondary">
+                                            <i class="bi bi-slash-circle"></i> @audiobook.Status
+                                        </span>
+                                    }
+                                    else if (audiobook.Status == AudiobookStatus.Cancelled)
+                                    {
+                                        <span class="badge bg-dark">
+                                            <i class="bi bi-x-circle"></i> @audiobook.Status
                                         </span>
                                     }
 
@@ -114,7 +127,7 @@
                                         </small>
                                     }
 
-                                    @if (!string.IsNullOrEmpty(audiobook.ErrorMessage) && audiobook.Status == "Failed")
+                                    @if (!string.IsNullOrEmpty(audiobook.ErrorMessage) && (audiobook.Status == AudiobookStatus.Failed || audiobook.Status == AudiobookStatus.Rejected))
                                     {
                                         <div class="alert alert-danger mt-2 mb-0 py-2">
                                             <small>@audiobook.ErrorMessage</small>
@@ -124,7 +137,7 @@
                             </div>
 
                             <div class="mt-3 pt-3 border-top">
-                                @if (audiobook == null || audiobook.Status == "Failed")
+                                @if (audiobook == null || audiobook.CanRetry)
                                 {
                                     <form method="post" asp-page-handler="Generate" class="d-inline">
                                         <input type="hidden" name="productId" value="@product.Id" />

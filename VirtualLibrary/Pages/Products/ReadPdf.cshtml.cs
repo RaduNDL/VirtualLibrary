@@ -45,13 +45,16 @@ namespace VirtualLibrary.Pages.Products
                 if (audiobook == null)
                     return new JsonResult(new { error = "Product not found." }) { StatusCode = 404 };
 
-                if (audiobook.Status == "Failed")
+                if (audiobook.HasFailed)
                     return new JsonResult(new { error = audiobook.ErrorMessage }) { StatusCode = 400 };
+
+                if (audiobook.Status == AudiobookStatus.Rejected)
+                    return new JsonResult(new { error = audiobook.ErrorMessage ?? "Content rejected for audio generation." }) { StatusCode = 400 };
 
                 return new JsonResult(new
                 {
                     audiobookId = audiobook.AudiobookId,
-                    status = audiobook.Status,
+                    status = audiobook.Status.ToString(),
                     audioUrl = "/" + audiobook.AudioFilePath
                 });
             }

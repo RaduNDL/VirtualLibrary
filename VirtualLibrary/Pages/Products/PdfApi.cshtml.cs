@@ -23,6 +23,7 @@ namespace VirtualLibrary.Pages.Products
             _logger = logger;
         }
 
+       
         [AllowAnonymous]
         public async Task<IActionResult> OnGetStatusAsync(int productId)
         {
@@ -90,6 +91,7 @@ namespace VirtualLibrary.Pages.Products
             });
         }
 
+        
         [RequestSizeLimit(104_857_600)]
         public async Task<IActionResult> OnPostUploadFileAsync(int productId, IFormFile? pdfFile)
         {
@@ -152,6 +154,7 @@ namespace VirtualLibrary.Pages.Products
             });
         }
 
+  
         public async Task<IActionResult> OnPostSearchOpenLibraryAsync([FromBody] SearchInput input)
         {
             var product = await _context.Products.FirstOrDefaultAsync(p => p.Id == input.ProductId);
@@ -185,6 +188,7 @@ namespace VirtualLibrary.Pages.Products
             });
         }
 
+  
         public async Task<IActionResult> OnPostSearchAllAsync([FromBody] SearchAllInput? input)
         {
             int maxBooks = input?.MaxBooks ?? 10;

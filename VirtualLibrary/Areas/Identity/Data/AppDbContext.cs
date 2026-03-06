@@ -27,7 +27,6 @@ namespace VirtualLibrary.Data
             builder.Entity<ApplicationUser>(entity =>
             {
                 entity.HasKey(a => a.Id);
-
                 entity.HasOne<IdentityUser>()
                     .WithOne()
                     .HasForeignKey<ApplicationUser>(a => a.IdentityUserId)
@@ -122,7 +121,8 @@ namespace VirtualLibrary.Data
 
                 entity.Property(a => a.Status)
                     .HasMaxLength(50)
-                    .HasDefaultValue("Pending");
+                    .HasDefaultValue(AudiobookStatus.Pending)
+                    .HasConversion<string>();
 
                 entity.HasIndex(a => a.ProductId);
             });
