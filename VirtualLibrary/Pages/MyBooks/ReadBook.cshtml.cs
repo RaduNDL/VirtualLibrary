@@ -5,52 +5,55 @@ using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using VirtualLibrary.Data;
 using VirtualLibrary.Models;
+using VirtualLibrary.Pages.Products;
 using VirtualLibrary.Services;
 
-namespace VirtualLibrary.Pages.Products
+namespace VirtualLibrary.Pages.MyBooks
 {
     [Authorize]
-    public class ReadPdfModel : PageModel
+    public class ReadBookModel : PageModel
     {
         private readonly AppDbContext _context;
         private readonly AudiobookService _audiobookService;
 
-        public ReadPdfModel(AppDbContext context, AudiobookService audiobookService)
+        public ReadBookModel(AppDbContext context, AudiobookService audiobookService)
         {
             _context = context;
             _audiobookService = audiobookService;
         }
 
         public Product Product { get; set; } = null!;
+        public Audiobook? Audiobook { get; set; }
         public bool HasPurchased { get; set; }
 
         public async Task<IActionResult> OnGetAsync(int id)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            // Check if user is admin OR has purchased this book
-            var isAdmin = User.IsInRole("Administrator");
-            var hasPurchased = await _context.OrderItems
+            // Check if user purchased this product
+            HasPurchased = await _context.OrderItems
                 .Include(oi => oi.Order)
                 .AnyAsync(oi => oi.Order.UserId == userId && oi.ProductId == id);
 
-            if (!isAdmin && !hasPurchased)
+            if (!HasPurchased)
             {
-                TempData["StatusMessage"] = "✗ You need to purchase this book first to read it.";
                 return RedirectToPage("/Library/Index");
             }
-
-            HasPurchased = hasPurchased;
 
             var product = await _context.Products
                 .AsNoTracking()
                 .Include(p => p.Category)
                 .FirstOrDefaultAsync(p => p.Id == id);
 
-            if (product is null)
+            if (product == null)
                 return NotFound();
 
             Product = product;
+
+            Audiobook = await _context.Audiobooks
+                .AsNoTracking()
+                .FirstOrDefaultAsync(a => a.ProductId == id);
+
             return Page();
         }
 
@@ -58,13 +61,12 @@ namespace VirtualLibrary.Pages.Products
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            // Verify purchase before generating
-            var isAdmin = User.IsInRole("Administrator");
+            // Verify purchase
             var hasPurchased = await _context.OrderItems
                 .Include(oi => oi.Order)
                 .AnyAsync(oi => oi.Order.UserId == userId && oi.ProductId == request.ProductId);
 
-            if (!isAdmin && !hasPurchased)
+            if (!hasPurchased)
             {
                 return new JsonResult(new { error = "You must purchase this book first." }) { StatusCode = 403 };
             }
@@ -94,10 +96,5 @@ namespace VirtualLibrary.Pages.Products
                 return new JsonResult(new { error = "Server error: " + ex.Message }) { StatusCode = 500 };
             }
         }
-    }
-
-    public class GenerateAudioRequest
-    {
-        public int ProductId { get; set; }
     }
 }

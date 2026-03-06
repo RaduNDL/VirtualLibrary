@@ -1,0 +1,110 @@
+﻿@page "{id:int}"
+@using VirtualLibrary.Models
+@model VirtualLibrary.Pages.MyBooks.ReadBookModel
+@{
+    ViewData["Title"] = $"Read: {Model.Product?.Title}";
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+}
+
+<link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+<link rel="stylesheet" href="~/css/ReadPdf.css">
+
+<div class="reader-wrapper">
+    <header class="reader-header">
+        <a asp-page="/MyBooks/Index" class="back-link">
+            <i class='bx bx-left-arrow-alt'></i> Back to My Books
+        </a>
+        <h2><i class='bx bxs-file-pdf'></i> @Model.Product!.Title</h2>
+        @if (!string.IsNullOrWhiteSpace(Model.Product.Author))
+        {
+            <span class="author-sub">by @Model.Product.Author</span>
+        }
+    </header>
+
+    @Html.AntiForgeryToken()
+
+    @if (Model.Product.HasPdfAvailable)
+    {
+        <div class="pdf-viewer-container">
+            <iframe src="/@Model.Product.PdfFilePath"
+                    class="pdf-iframe"
+                    title="@Model.Product.Title"
+                    allowfullscreen>
+                <p>
+                    Your browser does not support PDF iframes.
+                    <a href="/@Model.Product.PdfFilePath" target="_blank">Download the PDF</a>.
+                </p>
+            </iframe>
+        </div>
+        <div class="pdf-actions-bar">
+            <a href="/@Model.Product.PdfFilePath" download class="btn-download">
+                <i class='bx bx-download'></i> Download PDF
+            </a>
+            <a href="/@Model.Product.PdfFilePath" target="_blank" class="btn-fullscreen">
+                <i class='bx bx-fullscreen'></i> Open in New Tab
+            </a>
+            @if (Model.Audiobook?.IsCompleted != true)
+            {
+                <button id="generateAudioBtn" data-product-id="@Model.Product.Id" class="btn-fullscreen" style="background: #6f42c1; border: none; cursor: pointer;">
+                    <i class='bx bx-headphone'></i> Generate Audiobook
+                </button>
+            }
+            else
+            {
+                <button id="generateAudioBtn" data-product-id="@Model.Product.Id" class="btn-fullscreen" style="background: #2BD47D; border: none; cursor: pointer; color: #0A2558;">
+                    <i class='bx bx-headphone'></i> Audio Ready — Click to Play
+                </button>
+            }
+        </div>
+
+        @* Audio Player *@
+        <div id="audioPlayerContainer" style="@(Model.Audiobook?.IsCompleted == true ? "" : "display: none;") margin-top: 15px; width: 100%; background: #fff; padding: 15px; border-radius: 10px; border: 1px solid #dee2e6;">
+            <h5 style="margin-bottom: 10px;"><i class='bx bx-volume-full'></i> Audiobook Player</h5>
+            <audio id="pdfAudioPlayer" controls style="width: 100%;"
+                   @if (Model.Audiobook?.IsCompleted == true && !string.IsNullOrWhiteSpace(Model.Audiobook.AudioFilePath))
+                   {
+                               <text>src="/@Model.Audiobook.AudioFilePath"</text>
+                       }
+    >
+                    Your browser does not support the audio element.
+                </audio>
+        </div>
+    }
+    else
+    {
+        <div class="no-pdf-box">
+            <i class='bx bx-error-circle'></i>
+            <h3>PDF Not Available</h3>
+            <p>This book does not have a PDF associated yet. You can still generate an audiobook from the description.</p>
+
+            <div style="margin-top: 20px;">
+                @if (Model.Audiobook?.IsCompleted != true)
+                {
+                    <button id="generateAudioBtn" data-product-id="@Model.Product.Id" class="btn-fullscreen" style="background: #6f42c1; border: none; cursor: pointer; padding: 12px 24px; color: #fff; border-radius: 10px; font-weight: 600;">
+                        <i class='bx bx-headphone'></i> Generate Audiobook from Description
+                    </button>
+                }
+            </div>
+
+            <div id="audioPlayerContainer" style="@(Model.Audiobook?.IsCompleted == true ? "" : "display: none;") margin-top: 15px; width: 100%; background: #fff; padding: 15px; border-radius: 10px; border: 1px solid #dee2e6;">
+                <h5 style="margin-bottom: 10px;"><i class='bx bx-volume-full'></i> Audiobook Player</h5>
+                <audio id="pdfAudioPlayer" controls style="width: 100%;"
+                       @if (Model.Audiobook?.IsCompleted == true && !string.IsNullOrWhiteSpace(Model.Audiobook.AudioFilePath))
+                       {
+                                   <text>src="/@Model.Audiobook.AudioFilePath"</text>
+                           }
+    >
+                        Your browser does not support the audio element.
+                    </audio>
+            </div>
+
+            <a asp-page="/MyBooks/Index" class="btn-back" style="margin-top: 15px; display: inline-block;">
+                Back to My Books
+            </a>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script src="~/js/pdf-viewer.js"></script>
+}

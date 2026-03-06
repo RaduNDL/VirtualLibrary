@@ -1,0 +1,193 @@
+﻿@page
+@using VirtualLibrary.Models
+@model VirtualLibrary.Pages.MyBooks.IndexModel
+@{
+    ViewData["Title"] = "My Purchased Books";
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+}
+
+<link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+<link rel="stylesheet" href="~/css/MyBooks.css">
+
+<div class="mybooks-wrapper">
+    <div class="mybooks-container">
+        <header class="mybooks-header">
+            <div>
+                <h2><i class='bx bxs-book-reader'></i> My Purchased Books</h2>
+                <p class="header-subtitle">Read your books and generate audiobooks</p>
+            </div>
+            <div class="header-stats">
+                <div class="stat-badge">
+                    <i class='bx bx-book-open'></i>
+                    <span>@Model.PurchasedBooks.Count books</span>
+                </div>
+                <div class="stat-badge audiobook-stat">
+                    <i class='bx bx-headphone'></i>
+                    <span>@Model.PurchasedBooks.Count(b => b.Audiobook?.IsCompleted == true) audiobooks</span>
+                </div>
+            </div>
+        </header>
+
+        @if (!string.IsNullOrEmpty(Model.StatusMessage))
+        {
+            var alertClass = Model.StatusMessage.StartsWith("✓") ? "alert-success" :
+            Model.StatusMessage.StartsWith("⏳") ? "alert-warning" : "alert-danger";
+            <div class="alert @alertClass alert-dismissible fade show" role="alert">
+                @Html.Raw(Model.StatusMessage)
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        }
+
+        @if (!Model.PurchasedBooks.Any())
+        {
+            <div class="empty-state">
+                <i class='bx bx-cart'></i>
+                <h3>No Purchased Books Yet</h3>
+                <p>Browse our library and purchase books to see them here.</p>
+                <a asp-page="/Library/Index" class="btn-browse">
+                    <i class='bx bx-library'></i> Browse Library
+                </a>
+            </div>
+        }
+        else
+        {
+            <div class="books-list">
+                @foreach (var item in Model.PurchasedBooks)
+                {
+                    var product = item.Product;
+                    var audiobook = item.Audiobook;
+                    var isCompleted = audiobook?.Status == AudiobookStatus.Completed;
+                    var isProcessing = audiobook?.Status == AudiobookStatus.Processing;
+                    var canGenerate = audiobook == null || audiobook.CanRetry;
+
+                    <div class="purchased-book-card">
+                        <div class="book-cover-section">
+                            <img src="~/@product.ImagePath" alt="@product.Title"
+                                 onerror="this.src='/images/no-cover.svg'" />
+                            <div class="purchase-date">
+                                <i class='bx bx-calendar-check'></i>
+                                @item.PurchaseDate.ToString("dd MMM yyyy")
+                            </div>
+                        </div>
+
+                        <div class="book-content-section">
+                            <div class="book-header-info">
+                                <h3>@product.Title</h3>
+                                @if (!string.IsNullOrWhiteSpace(product.Author))
+                                {
+                                    <p class="author">by @product.Author</p>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(product.Category?.Name))
+                                {
+                                    <span class="category-badge">@product.Category.Name</span>
+                                }
+                            </div>
+
+                            @* Audiobook Status Section *@
+                            <div class="audiobook-status-section">
+                                @if (audiobook == null)
+                                {
+                                    <span class="status-badge status-none">
+                                        <i class='bx bx-music'></i> No Audiobook
+                                    </span>
+                                }
+                                else if (isCompleted)
+                                {
+                                    <span class="status-badge status-ready">
+                                        <i class='bx bx-check-circle'></i> Audiobook Ready
+                                    </span>
+                                    @if (audiobook.Duration.HasValue)
+                                    {
+                                        <span class="duration-info">
+                                            <i class='bx bx-time-five'></i> @audiobook.Duration?.ToString(@"hh\:mm\:ss")
+                                        </span>
+                                    }
+                                }
+                                else if (isProcessing)
+                                {
+                                    <span class="status-badge status-processing">
+                                        <span class="spinner-border spinner-border-sm me-1"></span> Generating...
+                                    </span>
+                                }
+                                else if (audiobook.Status == AudiobookStatus.Failed)
+                                {
+                                    <span class="status-badge status-failed">
+                                        <i class='bx bx-error-circle'></i> Failed
+                                    </span>
+                                    @if (!string.IsNullOrEmpty(audiobook.ErrorMessage))
+                                    {
+                                        <small class="error-msg">@audiobook.ErrorMessage</small>
+                                    }
+                                }
+                                else if (audiobook.Status == AudiobookStatus.Rejected)
+                                {
+                                    <span class="status-badge status-rejected">
+                                        <i class='bx bx-block'></i> Rejected
+                                    </span>
+                                    @if (!string.IsNullOrEmpty(audiobook.ErrorMessage))
+                                    {
+                                        <small class="error-msg">@audiobook.ErrorMessage</small>
+                                    }
+                                }
+                            </div>
+
+                            @* Audio Player (if completed) *@
+                            @if (isCompleted && !string.IsNullOrWhiteSpace(audiobook?.AudioFilePath))
+                            {
+                                <div class="audio-player-inline">
+                                    <audio controls style="width: 100%;">
+                                        <source src="/@audiobook.AudioFilePath" type="audio/mpeg">
+                                        Your browser does not support audio.
+                                    </audio>
+                                </div>
+                            }
+
+                            @* Action Buttons *@
+                            <div class="book-actions-bar">
+                                @if (product.HasPdfAvailable)
+                                {
+                                    <a asp-page="/MyBooks/ReadBook" asp-route-id="@product.Id" class="btn-action btn-read">
+                                        <i class='bx bx-book-open'></i> Read Book
+                                    </a>
+                                }
+
+                                @if (canGenerate)
+                                {
+                                    <form method="post" asp-page-handler="GenerateAudiobook" class="d-inline">
+                                        <input type="hidden" name="productId" value="@product.Id" />
+                                        <button type="submit" class="btn-action btn-generate">
+                                            <i class='bx bx-headphone'></i> Generate Audiobook
+                                        </button>
+                                    </form>
+                                }
+                                else if (isProcessing)
+                                {
+                                    <button class="btn-action btn-processing" disabled>
+                                        <span class="spinner-border spinner-border-sm me-1"></span> Generating...
+                                    </button>
+                                }
+
+                                @if (isCompleted)
+                                {
+                                    <a asp-page="/MyBooks/Index" asp-page-handler="Download"
+                                       asp-route-audiobookId="@audiobook!.AudiobookId"
+                                       class="btn-action btn-download">
+                                        <i class='bx bx-download'></i> Download MP3
+                                    </a>
+
+                                    <form method="post" asp-page-handler="DeleteAudiobook" class="d-inline"
+                                          onsubmit="return confirm('Delete this audiobook? You can regenerate it anytime.');">
+                                        <input type="hidden" name="audiobookId" value="@audiobook!.AudiobookId" />
+                                        <button type="submit" class="btn-action btn-delete">
+                                            <i class='bx bx-trash'></i> Delete
+                                        </button>
+                                    </form>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>

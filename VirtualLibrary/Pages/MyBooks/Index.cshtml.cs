@@ -10,7 +10,7 @@ using VirtualLibrary.Data;
 using VirtualLibrary.Models;
 using VirtualLibrary.Services;
 
-namespace VirtualLibrary.Pages.Audiobooks
+namespace VirtualLibrary.Pages.MyBooks
 {
     [Authorize]
     public class IndexModel : PageModel
@@ -29,26 +29,24 @@ namespace VirtualLibrary.Pages.Audiobooks
             _logger = logger;
         }
 
-        public IList<Product> Products { get; set; } = new List<Product>();
-        public Dictionary<int, Audiobook?> AudiobookStatus { get; set; } = new();
-        public string CurrentUserId { get; set; } = "";
-        public int TotalAudiobooksGenerated { get; set; }
+        public IList<PurchasedBookViewModel> PurchasedBooks { get; set; } = new List<PurchasedBookViewModel>();
 
         [TempData]
         public string? StatusMessage { get; set; }
 
         public async Task OnGetAsync()
         {
-            CurrentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "";
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
+            // Get all distinct products this user has purchased
             var purchasedProductIds = await _context.OrderItems
                 .Include(oi => oi.Order)
-                .Where(oi => oi.Order.UserId == CurrentUserId)
+                .Where(oi => oi.Order.UserId == userId)
                 .Select(oi => oi.ProductId)
                 .Distinct()
                 .ToListAsync();
 
-            Products = await _context.Products
+            var products = await _context.Products
                 .AsNoTracking()
                 .Include(p => p.Category)
                 .Where(p => purchasedProductIds.Contains(p.Id))
@@ -60,18 +58,31 @@ namespace VirtualLibrary.Pages.Audiobooks
                 .Where(a => purchasedProductIds.Contains(a.ProductId))
                 .ToListAsync();
 
-            foreach (var product in Products)
-            {
-                AudiobookStatus[product.Id] = audiobooks.FirstOrDefault(a => a.ProductId == product.Id);
-            }
+            // Get order dates for each product
+            var orderDates = await _context.OrderItems
+                .Include(oi => oi.Order)
+                .Where(oi => oi.Order.UserId == userId)
+                .GroupBy(oi => oi.ProductId)
+                .Select(g => new { ProductId = g.Key, PurchaseDate = g.Max(oi => oi.Order.OrderDate) })
+                .ToDictionaryAsync(x => x.ProductId, x => x.PurchaseDate);
 
-            TotalAudiobooksGenerated = audiobooks.Count(a => a.Status == Models.AudiobookStatus.Completed);
+            foreach (var product in products)
+            {
+                var audiobook = audiobooks.FirstOrDefault(a => a.ProductId == product.Id);
+                PurchasedBooks.Add(new PurchasedBookViewModel
+                {
+                    Product = product,
+                    Audiobook = audiobook,
+                    PurchaseDate = orderDates.ContainsKey(product.Id) ? orderDates[product.Id] : DateTime.MinValue
+                });
+            }
         }
 
-        public async Task<IActionResult> OnPostGenerateAsync(int productId)
+        public async Task<IActionResult> OnPostGenerateAudiobookAsync(int productId)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
+            // Verify the user has purchased this product
             var hasPurchased = await _context.OrderItems
                 .Include(oi => oi.Order)
                 .AnyAsync(oi => oi.Order.UserId == userId && oi.ProductId == productId);
@@ -87,33 +98,56 @@ namespace VirtualLibrary.Pages.Audiobooks
                 var product = await _context.Products.FirstOrDefaultAsync(p => p.Id == productId);
                 if (product == null)
                 {
-                    StatusMessage = "✗ Product not found";
+                    StatusMessage = "✗ Product not found.";
                     return RedirectToPage();
                 }
 
-                _logger.LogInformation("User generating audiobook for product {ProductId}", productId);
+                _logger.LogInformation("User {UserId} generating audiobook for purchased product {ProductId}", userId, productId);
                 var audiobook = await _audiobookService.GenerateAudiobookAsync(productId);
 
-                if (audiobook?.Status == Models.AudiobookStatus.Completed)
-                    StatusMessage = $"✓ Audiobook ready for '{product.Title}'! You can now download it.";
-                else if (audiobook?.Status == Models.AudiobookStatus.Failed)
+                if (audiobook?.Status == AudiobookStatus.Completed)
+                    StatusMessage = $"✓ Audiobook ready for '{product.Title}'! You can now listen or download it.";
+                else if (audiobook?.Status == AudiobookStatus.Failed)
                     StatusMessage = $"✗ Failed to generate audiobook: {audiobook.ErrorMessage}";
-                else if (audiobook?.Status == Models.AudiobookStatus.Rejected)
+                else if (audiobook?.Status == AudiobookStatus.Rejected)
                     StatusMessage = $"✗ Rejected: {audiobook.ErrorMessage}";
-                else if (audiobook?.Status == Models.AudiobookStatus.Processing)
+                else if (audiobook?.Status == AudiobookStatus.Processing)
                     StatusMessage = $"⏳ Generating audiobook for '{product.Title}'... This may take a few minutes.";
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error generating audiobook");
+                _logger.LogError(ex, "Error generating audiobook for product {ProductId}", productId);
                 StatusMessage = $"✗ Error: {ex.Message}";
             }
 
             return RedirectToPage();
         }
 
-        public async Task<IActionResult> OnPostDeleteAsync(int audiobookId)
+        public async Task<IActionResult> OnPostDeleteAudiobookAsync(int audiobookId)
         {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            // Verify ownership
+            var audiobook = await _context.Audiobooks
+                .Include(a => a.Product)
+                .FirstOrDefaultAsync(a => a.AudiobookId == audiobookId);
+
+            if (audiobook == null)
+            {
+                StatusMessage = "✗ Audiobook not found.";
+                return RedirectToPage();
+            }
+
+            var hasPurchased = await _context.OrderItems
+                .Include(oi => oi.Order)
+                .AnyAsync(oi => oi.Order.UserId == userId && oi.ProductId == audiobook.ProductId);
+
+            if (!hasPurchased)
+            {
+                StatusMessage = "✗ You don't have access to this audiobook.";
+                return RedirectToPage();
+            }
+
             try
             {
                 var success = await _audiobookService.DeleteAudiobookAsync(audiobookId);
@@ -157,5 +191,12 @@ namespace VirtualLibrary.Pages.Audiobooks
             var fileName = $"{audiobook.Product?.Title ?? "audiobook"}.mp3";
             return PhysicalFile(filePath, "audio/mpeg", fileName);
         }
+    }
+
+    public class PurchasedBookViewModel
+    {
+        public Product Product { get; set; } = null!;
+        public Audiobook? Audiobook { get; set; }
+        public DateTime PurchaseDate { get; set; }
     }
 }

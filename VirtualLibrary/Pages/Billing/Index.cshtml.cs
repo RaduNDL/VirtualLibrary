@@ -89,9 +89,8 @@ namespace VirtualLibrary.Pages.Billing
 
             await _context.SaveChangesAsync();
 
-       
-
-            return RedirectToPage("/Orders/OrderDetails", new { id = order.OrderId });
+            TempData["StatusMessage"] = $"✓ Purchase successful! You can now read your books and generate audiobooks.";
+            return RedirectToPage("/MyBooks/Index");
         }
     }
 }
