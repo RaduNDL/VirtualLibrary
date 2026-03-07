@@ -27,6 +27,7 @@ namespace VirtualLibrary.Data
             builder.Entity<ApplicationUser>(entity =>
             {
                 entity.HasKey(a => a.Id);
+
                 entity.HasOne<IdentityUser>()
                     .WithOne()
                     .HasForeignKey<ApplicationUser>(a => a.IdentityUserId)
@@ -35,6 +36,8 @@ namespace VirtualLibrary.Data
 
             builder.Entity<Product>(entity =>
             {
+                entity.HasKey(p => p.Id);
+
                 entity.HasOne(p => p.Supplier)
                     .WithMany(s => s.Products)
                     .HasForeignKey(p => p.SupplierId)
@@ -46,6 +49,19 @@ namespace VirtualLibrary.Data
                     .OnDelete(DeleteBehavior.Restrict);
 
                 entity.Property(p => p.Price)
+                    .HasPrecision(18, 2);
+            });
+
+            builder.Entity<Order>(entity =>
+            {
+                entity.HasKey(o => o.OrderId);
+
+                entity.HasOne(o => o.User)
+                    .WithMany()
+                    .HasForeignKey(o => o.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.Property(o => o.TotalAmount)
                     .HasPrecision(18, 2);
             });
 
@@ -64,19 +80,6 @@ namespace VirtualLibrary.Data
                     .OnDelete(DeleteBehavior.Restrict);
 
                 entity.Property(oi => oi.Price)
-                    .HasPrecision(18, 2);
-            });
-
-            builder.Entity<Order>(entity =>
-            {
-                entity.HasKey(o => o.OrderId);
-
-                entity.HasOne(o => o.User)
-                    .WithMany()
-                    .HasForeignKey(o => o.UserId)
-                    .OnDelete(DeleteBehavior.Cascade);
-
-                entity.Property(o => o.TotalAmount)
                     .HasPrecision(18, 2);
             });
 
@@ -121,10 +124,17 @@ namespace VirtualLibrary.Data
 
                 entity.Property(a => a.Status)
                     .HasMaxLength(50)
-                    .HasDefaultValue(AudiobookStatus.Pending)
-                    .HasConversion<string>();
+                    .HasConversion<string>()
+                    .HasDefaultValue(AudiobookStatus.Pending);
 
-                entity.HasIndex(a => a.ProductId);
+                entity.Property(a => a.AudioFilePath)
+                    .HasMaxLength(500);
+
+                entity.Property(a => a.ErrorMessage)
+                    .HasMaxLength(2000);
+
+                entity.HasIndex(a => a.ProductId)
+                    .IsUnique();
             });
         }
     }

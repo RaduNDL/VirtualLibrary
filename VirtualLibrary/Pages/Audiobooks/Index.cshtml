@@ -17,6 +17,7 @@
                     <small>Books Available</small>
                 </div>
             </div>
+
             <div class="col-md-6">
                 <div class="p-3" style="background: rgba(255,255,255,0.1); border-radius: 8px;">
                     <div class="fs-3 fw-bold">@Model.TotalAudiobooksGenerated</div>
@@ -28,7 +29,7 @@
 
     @if (!string.IsNullOrEmpty(Model.StatusMessage))
     {
-        <div class="alert alert-info alert-dismissible fade show" role="alert">
+        <div class="alert alert-info alert-dismissible fade show">
             @Html.Raw(Model.StatusMessage)
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
@@ -40,8 +41,9 @@
             <div class="display-1 text-muted mb-3">📚</div>
             <h3 class="text-muted">No Books Available</h3>
             <p class="text-muted mb-4">Browse our library to find books to convert to audiobooks</p>
+
             <a href="@Url.Page("/Library/Index")" class="btn btn-primary btn-lg">
-                <i class="bi bi-book"></i> Browse Library
+                Browse Library
             </a>
         </div>
     }
@@ -60,16 +62,19 @@
             <div class="card mb-3 shadow-sm">
                 <div class="card-body">
                     <div class="row g-3">
+
                         <div class="col-md-2 text-center">
                             <img src="~/@product.ImagePath"
                                  alt="@product.Title"
                                  class="img-thumbnail"
-                                 style="width: 100px; height: 150px; object-fit: cover;"
+                                 style="width:100px;height:150px;object-fit:cover"
                                  onerror="this.src='/images/no-cover.svg'" />
                         </div>
 
                         <div class="col-md-10">
+
                             <h5 class="card-title mb-1">@product.Title</h5>
+
                             <p class="card-text text-muted mb-2">
                                 <strong>by @(product.Author ?? "Unknown Author")</strong>
                             </p>
@@ -80,10 +85,11 @@
                             }
 
                             <div class="mt-3 pt-3 border-top">
+
                                 @if (audiobook == null)
                                 {
                                     <span class="badge bg-warning text-dark">
-                                        <i class="bi bi-clock-history"></i> Not Generated
+                                        Not Generated
                                     </span>
                                 }
                                 else
@@ -91,65 +97,62 @@
                                     @if (audiobook.Status == AudiobookStatus.Completed)
                                     {
                                         <span class="badge bg-success">
-                                            <i class="bi bi-check-circle"></i> @audiobook.Status
+                                            Completed
                                         </span>
                                     }
                                     else if (audiobook.Status == AudiobookStatus.Processing)
                                     {
                                         <span class="badge bg-info">
-                                            <span class="spinner-border spinner-border-sm me-2" role="status"></span>
-                                            @audiobook.Status
+                                            <span class="spinner-border spinner-border-sm me-2"></span>
+                                            Processing
                                         </span>
                                     }
                                     else if (audiobook.Status == AudiobookStatus.Failed)
                                     {
                                         <span class="badge bg-danger">
-                                            <i class="bi bi-exclamation-circle"></i> @audiobook.Status
+                                            Failed
                                         </span>
                                     }
-                                    else if (audiobook.Status == AudiobookStatus.Rejected)
+                                    else if (audiobook.Status == AudiobookStatus.Pending)
                                     {
                                         <span class="badge bg-secondary">
-                                            <i class="bi bi-slash-circle"></i> @audiobook.Status
-                                        </span>
-                                    }
-                                    else if (audiobook.Status == AudiobookStatus.Cancelled)
-                                    {
-                                        <span class="badge bg-dark">
-                                            <i class="bi bi-x-circle"></i> @audiobook.Status
+                                            Pending
                                         </span>
                                     }
 
                                     @if (isCompleted && audiobook.Duration.HasValue)
                                     {
                                         <small class="d-block text-muted mt-2">
-                                            <i class="bi bi-clock"></i> Duration: @audiobook.Duration?.ToString(@"hh\:mm\:ss")
+                                            Duration: @audiobook.Duration?.ToString(@"hh\:mm\:ss")
                                         </small>
                                     }
 
-                                    @if (!string.IsNullOrEmpty(audiobook.ErrorMessage) && (audiobook.Status == AudiobookStatus.Failed || audiobook.Status == AudiobookStatus.Rejected))
+                                    @if (!string.IsNullOrEmpty(audiobook.ErrorMessage) && audiobook.Status == AudiobookStatus.Failed)
                                     {
                                         <div class="alert alert-danger mt-2 mb-0 py-2">
                                             <small>@audiobook.ErrorMessage</small>
                                         </div>
                                     }
                                 }
+
                             </div>
 
                             <div class="mt-3 pt-3 border-top">
+
                                 @if (audiobook == null || audiobook.CanRetry)
                                 {
                                     <form method="post" asp-page-handler="Generate" class="d-inline">
                                         <input type="hidden" name="productId" value="@product.Id" />
+
                                         <button type="submit" class="btn btn-sm btn-primary">
-                                            <i class="bi bi-play-circle"></i> Generate Audiobook
+                                            Generate Audiobook
                                         </button>
                                     </form>
                                 }
                                 else if (isProcessing)
                                 {
-                                    <button type="button" class="btn btn-sm btn-secondary" disabled>
-                                        <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                    <button class="btn btn-sm btn-secondary" disabled>
+                                        <span class="spinner-border spinner-border-sm me-2"></span>
                                         Generating...
                                     </button>
                                 }
@@ -157,26 +160,35 @@
                                 {
                                     <a href="/Audiobooks/Index?handler=Download&audiobookId=@audiobook.AudiobookId"
                                        class="btn btn-sm btn-success" download>
-                                        <i class="bi bi-download"></i> Download MP3
+                                        Download MP3
                                     </a>
 
                                     @if (product.HasPdfAvailable)
                                     {
                                         <a href="/Audiobooks/PdfViewer?productId=@product.Id"
                                            class="btn btn-sm btn-info">
-                                            <i class="bi bi-book"></i> Read & Listen
+                                            Read & Listen
                                         </a>
                                     }
 
-                                    <form method="post" asp-page-handler="Delete" class="d-inline"
-                                          onsubmit="return confirm('Delete this audiobook? You can regenerate it anytime.');">
-                                        <input type="hidden" name="audiobookId" value="@audiobook.AudiobookId" />
-                                        <button type="submit" class="btn btn-sm btn-outline-danger">
-                                            <i class="bi bi-trash"></i> Delete
+                                    <form method="post"
+                                          asp-page-handler="Delete"
+                                          class="d-inline"
+                                          onsubmit="return confirm('Delete this audiobook?');">
+
+                                        <input type="hidden"
+                                               name="audiobookId"
+                                               value="@audiobook.AudiobookId" />
+
+                                        <button type="submit"
+                                                class="btn btn-sm btn-outline-danger">
+                                            Delete
                                         </button>
                                     </form>
                                 }
+
                             </div>
+
                         </div>
                     </div>
                 </div>

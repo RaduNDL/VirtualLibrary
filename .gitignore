@@ -5,4 +5,6 @@ obj/
 *.suo 
 *.dbmdl 
 *.log 
+VirtualLibrary/wwwroot/pdfs/*
+VirtualLibrary/wwwroot/audiobooks/*
 /Properties/PublishProfiles/ 

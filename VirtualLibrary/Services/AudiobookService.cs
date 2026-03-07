@@ -1,5 +1,7 @@
 ﻿using EdgeTtsSharp;
+using EdgeTtsSharp.Structures;
 using Microsoft.EntityFrameworkCore;
+using System.Text.RegularExpressions;
 using VirtualLibrary.Data;
 using VirtualLibrary.Models;
 
@@ -7,11 +9,14 @@ namespace VirtualLibrary.Services
 {
     public class AudiobookService
     {
-        private readonly AppDbContext _db; 
+        private readonly AppDbContext _db;
         private readonly IWebHostEnvironment _env;
         private readonly IConfiguration _config;
         private readonly PdfService _pdfService;
         private readonly ILogger<AudiobookService> _logger;
+
+        private static IReadOnlyList<Voice>? _cachedVoices;
+        private static readonly SemaphoreSlim _voiceLock = new(1, 1);
 
         public AudiobookService(
             AppDbContext db,
@@ -27,27 +32,68 @@ namespace VirtualLibrary.Services
             _logger = logger;
         }
 
+        public async Task<Audiobook?> StartGenerationAsync(int productId)
+        {
+            var productExists = await _db.Products
+                .AsNoTracking()
+                .AnyAsync(p => p.Id == productId);
+
+            if (!productExists)
+                return null;
+
+            var audiobook = await _db.Audiobooks
+                .FirstOrDefaultAsync(a => a.ProductId == productId);
+
+            if (audiobook != null)
+            {
+                if (audiobook.Status == AudiobookStatus.Completed && AudioFileExists(audiobook))
+                    return audiobook;
+
+                if (!string.IsNullOrWhiteSpace(audiobook.AudioFilePath))
+                {
+                    var oldFullPath = Path.Combine(_env.ContentRootPath, audiobook.AudioFilePath);
+                    DeleteFileSafe(oldFullPath);
+                }
+
+                audiobook.Status = AudiobookStatus.Pending;
+                audiobook.AudioFilePath = null;
+                audiobook.ErrorMessage = null;
+                audiobook.CompletedAtUtc = null;
+                audiobook.Duration = null;
+            }
+            else
+            {
+                audiobook = new Audiobook
+                {
+                    ProductId = productId,
+                    Status = AudiobookStatus.Pending,
+                    CreatedAtUtc = DateTime.UtcNow
+                };
+
+                _db.Audiobooks.Add(audiobook);
+            }
+
+            await _db.SaveChangesAsync();
+            return audiobook;
+        }
+
         public async Task<Audiobook?> GenerateAudiobookAsync(int productId)
         {
             try
             {
-                var product = await _db.Products.FirstOrDefaultAsync(p => p.Id == productId);
-                if (product == null) return null;
+                var product = await _db.Products
+                    .FirstOrDefaultAsync(p => p.Id == productId);
 
-                var existingAudiobook = await _db.Audiobooks
+                if (product == null)
+                    return null;
+
+                var audiobook = await _db.Audiobooks
                     .FirstOrDefaultAsync(a => a.ProductId == productId);
 
-                if (existingAudiobook != null && existingAudiobook.Status == AudiobookStatus.Completed)
-                    return existingAudiobook;
+                if (audiobook != null && audiobook.Status == AudiobookStatus.Completed && AudioFileExists(audiobook))
+                    return audiobook;
 
-                Audiobook audiobook;
-                if (existingAudiobook != null)
-                {
-                    audiobook = existingAudiobook;
-                    audiobook.Status = AudiobookStatus.Processing;
-                    audiobook.ErrorMessage = null;
-                }
-                else
+                if (audiobook == null)
                 {
                     audiobook = new Audiobook
                     {
@@ -55,7 +101,16 @@ namespace VirtualLibrary.Services
                         Status = AudiobookStatus.Processing,
                         CreatedAtUtc = DateTime.UtcNow
                     };
+
                     _db.Audiobooks.Add(audiobook);
+                }
+                else
+                {
+                    audiobook.Status = AudiobookStatus.Processing;
+                    audiobook.ErrorMessage = null;
+                    audiobook.CompletedAtUtc = null;
+                    audiobook.AudioFilePath = null;
+                    audiobook.Duration = null;
                 }
 
                 await _db.SaveChangesAsync();
@@ -64,41 +119,35 @@ namespace VirtualLibrary.Services
 
                 if (string.IsNullOrWhiteSpace(textToSpeak))
                 {
-                    audiobook.Status = AudiobookStatus.Rejected;
-                    audiobook.ErrorMessage = "No text content available. The book needs a PDF or description.";
+                    audiobook.Status = AudiobookStatus.Failed;
+                    audiobook.ErrorMessage = "No readable text was found.";
                     await _db.SaveChangesAsync();
                     return audiobook;
                 }
 
-                _logger.LogInformation("Generating audiobook for '{Title}' ({Length} chars) using Edge TTS",
-                    product.Title, textToSpeak.Length);
+                var audioRelativePath = await SynthesizeSpeechAsync(productId, textToSpeak);
 
-                var audioFilePath = await SynthesizeSpeechAsync(productId, textToSpeak);
-
-                if (string.IsNullOrEmpty(audioFilePath))
+                if (string.IsNullOrWhiteSpace(audioRelativePath))
                 {
                     audiobook.Status = AudiobookStatus.Failed;
-                    audiobook.ErrorMessage = "Failed to generate audio. Please try again.";
+                    audiobook.ErrorMessage = "Audio generation failed.";
                     await _db.SaveChangesAsync();
                     return audiobook;
                 }
 
-                audiobook.AudioFilePath = audioFilePath;
+                audiobook.AudioFilePath = audioRelativePath;
                 audiobook.Status = AudiobookStatus.Completed;
                 audiobook.CompletedAtUtc = DateTime.UtcNow;
 
-                var wordCount = textToSpeak.Split(new[] { ' ', '\n', '\r' },
-                    StringSplitOptions.RemoveEmptyEntries).Length;
-                audiobook.Duration = TimeSpan.FromSeconds(wordCount * 0.4);
+                var wordCount = textToSpeak.Split(new[] { ' ', '\n', '\r', '\t' }, StringSplitOptions.RemoveEmptyEntries).Length;
+                audiobook.Duration = TimeSpan.FromSeconds(Math.Max(3, wordCount * 0.42));
 
                 await _db.SaveChangesAsync();
-
-                _logger.LogInformation("✓ Audiobook generated for '{Title}'", product.Title);
                 return audiobook;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error generating audiobook for product {ProductId}", productId);
+                _logger.LogError(ex, "Audiobook generation failed for product {ProductId}", productId);
 
                 try
                 {
@@ -109,6 +158,7 @@ namespace VirtualLibrary.Services
                         audiobook.ErrorMessage = ex.Message;
                         await _db.SaveChangesAsync();
                     }
+
                     return audiobook;
                 }
                 catch
@@ -120,180 +170,167 @@ namespace VirtualLibrary.Services
 
         private async Task<string> PrepareAudioTextAsync(Product product)
         {
-            var textParts = new List<string>();
+            var parts = new List<string>();
 
             if (!string.IsNullOrWhiteSpace(product.Title))
-                textParts.Add(product.Title);
+                parts.Add(product.Title);
 
             if (!string.IsNullOrWhiteSpace(product.Author))
-                textParts.Add($"by {product.Author}");
+                parts.Add($"by {product.Author}");
+
+            string? extractedText = null;
 
             if (!string.IsNullOrWhiteSpace(product.PdfFilePath))
             {
                 var fullPdfPath = Path.Combine(_env.WebRootPath, product.PdfFilePath);
+
                 if (File.Exists(fullPdfPath))
                 {
-                    var extractedText = await _pdfService.ExtractTextAsync(fullPdfPath);
-                    if (!string.IsNullOrWhiteSpace(extractedText))
-                        textParts.Add(extractedText);
+                    try
+                    {
+                        extractedText = await _pdfService.ExtractTextAsync(fullPdfPath);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "PDF extraction failed for product {ProductId}", product.Id);
+                    }
                 }
             }
+
+            if (!string.IsNullOrWhiteSpace(extractedText))
+                parts.Add(extractedText);
             else if (!string.IsNullOrWhiteSpace(product.Description))
-            {
-                textParts.Add(product.Description);
-            }
+                parts.Add(product.Description);
 
-            var fullText = string.Join(". ", textParts);
+            var fullText = string.Join(". ", parts);
+            fullText = Regex.Replace(fullText, @"\s+", " ").Trim();
 
-            if (fullText.Length > 5000)
-                fullText = fullText[..5000];
+            if (fullText.Length > 2500)
+                fullText = fullText[..2500].Trim();
 
             return fullText;
         }
 
-        /// <summary>
-        /// Generate MP3 using EdgeTtsSharp — FREE, no API key, no account needed.
-        /// </summary>
-        private async Task<string> SynthesizeSpeechAsync(int productId, string text)
+        private async Task<Voice?> GetVoiceAsync(string preferredVoiceName)
         {
-            var audioBooksDir = Path.Combine(_env.WebRootPath, "audiobooks");
-            if (!Directory.Exists(audioBooksDir))
-                Directory.CreateDirectory(audioBooksDir);
-
-            var fileName = $"{productId}_{Guid.NewGuid():N}.mp3";
-            var filePath = Path.Combine(audioBooksDir, fileName);
-
-            var voiceName = _config["EdgeTTS:Voice"] ?? "en-US-AriaNeural";
-
-            _logger.LogInformation("Edge TTS: voice={Voice}, output={Path}", voiceName, filePath);
+            await _voiceLock.WaitAsync();
 
             try
             {
-                // Get the voice object
-                var voice = await EdgeTts.GetVoice(voiceName);
+                if (_cachedVoices == null || _cachedVoices.Count == 0)
+                    _cachedVoices = (await EdgeTts.GetVoices()).ToList();
 
-                if (voice == null)
-                {
-                    _logger.LogWarning("Voice '{Voice}' not found, falling back to en-US-AriaNeural", voiceName);
-                    voice = await EdgeTts.GetVoice("en-US-AriaNeural");
-                }
+                var voice = _cachedVoices.FirstOrDefault(v => v.ShortName == preferredVoiceName)
+                            ?? _cachedVoices.FirstOrDefault(v => v.ShortName == "en-US-AriaNeural")
+                            ?? _cachedVoices.FirstOrDefault();
 
-                if (voice == null)
+                return voice;
+            }
+            finally
+            {
+                _voiceLock.Release();
+            }
+        }
+
+        private async Task<string> SynthesizeSpeechAsync(int productId, string text)
+        {
+            var outputDir = Path.Combine(_env.ContentRootPath, "Generated", "Audiobooks");
+            Directory.CreateDirectory(outputDir);
+
+            var fileName = $"{productId}_{Guid.NewGuid():N}.mp3";
+            var finalPath = Path.Combine(outputDir, fileName);
+            var tempPath = Path.Combine(Path.GetTempPath(), fileName);
+
+            try
+            {
+                var preferredVoice = ContainsCjk(text)
+                    ? _config["EdgeTTS:ChineseVoice"] ?? "zh-CN-XiaoxiaoNeural"
+                    : _config["EdgeTTS:Voice"] ?? "en-US-AriaNeural";
+
+                var voice = await GetVoiceAsync(preferredVoice);
+
+                if (voice == null || string.IsNullOrWhiteSpace(voice.ShortName))
+                    return string.Empty;
+
+                await voice.SaveAudioToFile(text, tempPath);
+
+                if (!File.Exists(tempPath))
+                    return string.Empty;
+
+                var tempLength = new FileInfo(tempPath).Length;
+                if (tempLength < 100)
                 {
-                    _logger.LogError("No Edge TTS voice available!");
+                    DeleteFileSafe(tempPath);
                     return string.Empty;
                 }
 
-                // Split text into chunks (Edge TTS has limits per request)
-                var chunks = SplitTextIntoChunks(text, 2000);
-                _logger.LogInformation("Split text into {Count} chunks", chunks.Count);
+                File.Move(tempPath, finalPath, true);
 
-                if (chunks.Count == 1)
+                var finalLength = new FileInfo(finalPath).Length;
+                if (finalLength < 100)
                 {
-                    // Single chunk — save directly
-                    await voice.SaveAudioToFile(chunks[0], filePath);
-                }
-                else
-                {
-                    // Multiple chunks — concat into one file
-                    var tempFiles = new List<string>();
-
-                    try
-                    {
-                        for (int i = 0; i < chunks.Count; i++)
-                        {
-                            if (string.IsNullOrWhiteSpace(chunks[i])) continue;
-
-                            var tempFile = Path.Combine(audioBooksDir, $"temp_{productId}_{i}.mp3");
-                            await voice.SaveAudioToFile(chunks[i], tempFile);
-                            tempFiles.Add(tempFile);
-
-                            _logger.LogInformation("  Chunk {Index}/{Total} done", i + 1, chunks.Count);
-                        }
-
-                        // Concatenate all temp MP3 files into one
-                        using var output = new FileStream(filePath, FileMode.Create, FileAccess.Write);
-                        foreach (var tempFile in tempFiles)
-                        {
-                            var bytes = await File.ReadAllBytesAsync(tempFile);
-                            await output.WriteAsync(bytes);
-                        }
-                    }
-                    finally
-                    {
-                        // Clean up temp files
-                        foreach (var tempFile in tempFiles)
-                        {
-                            if (File.Exists(tempFile))
-                                File.Delete(tempFile);
-                        }
-                    }
-                }
-
-                var fileSize = new FileInfo(filePath).Length;
-                _logger.LogInformation("✓ Audio saved: {Path} ({Size} bytes)", filePath, fileSize);
-
-                if (fileSize < 100)
-                {
-                    _logger.LogWarning("Audio file too small, probably failed");
-                    File.Delete(filePath);
+                    DeleteFileSafe(finalPath);
                     return string.Empty;
                 }
+
+                return Path.Combine("Generated", "Audiobooks", fileName);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Edge TTS synthesis failed");
-
-                if (File.Exists(filePath))
-                    File.Delete(filePath);
-
+                _logger.LogError(ex, "Speech synthesis failed for product {ProductId}", productId);
+                DeleteFileSafe(tempPath);
+                DeleteFileSafe(finalPath);
                 return string.Empty;
             }
-
-            return Path.Combine("audiobooks", fileName).Replace('\\', '/');
         }
 
-        private static List<string> SplitTextIntoChunks(string text, int maxChunkSize)
+        private bool AudioFileExists(Audiobook audiobook)
         {
-            var chunks = new List<string>();
-            if (string.IsNullOrEmpty(text)) return chunks;
+            if (string.IsNullOrWhiteSpace(audiobook.AudioFilePath))
+                return false;
 
-            var remaining = text;
-            while (remaining.Length > 0)
+            var fullPath = Path.Combine(_env.ContentRootPath, audiobook.AudioFilePath);
+            return File.Exists(fullPath);
+        }
+
+        private static bool ContainsCjk(string text)
+        {
+            foreach (var ch in text)
             {
-                if (remaining.Length <= maxChunkSize)
+                if ((ch >= 0x4E00 && ch <= 0x9FFF) ||
+                    (ch >= 0x3400 && ch <= 0x4DBF) ||
+                    (ch >= 0x3040 && ch <= 0x30FF) ||
+                    (ch >= 0xAC00 && ch <= 0xD7AF))
                 {
-                    chunks.Add(remaining);
-                    break;
+                    return true;
                 }
-
-                var splitAt = maxChunkSize;
-                var lastPeriod = remaining.LastIndexOf('.', maxChunkSize - 1);
-                var lastExclamation = remaining.LastIndexOf('!', maxChunkSize - 1);
-                var lastQuestion = remaining.LastIndexOf('?', maxChunkSize - 1);
-                var lastNewline = remaining.LastIndexOf('\n', maxChunkSize - 1);
-
-                var bestSplit = new[] { lastPeriod, lastExclamation, lastQuestion, lastNewline }.Max();
-                if (bestSplit > maxChunkSize / 2)
-                    splitAt = bestSplit + 1;
-
-                chunks.Add(remaining[..splitAt].Trim());
-                remaining = remaining[splitAt..].Trim();
             }
 
-            return chunks;
+            return false;
+        }
+
+        private static void DeleteFileSafe(string path)
+        {
+            try
+            {
+                if (File.Exists(path))
+                    File.Delete(path);
+            }
+            catch
+            {
+            }
         }
 
         public async Task<bool> DeleteAudiobookAsync(int audiobookId)
         {
             var audiobook = await _db.Audiobooks.FirstOrDefaultAsync(a => a.AudiobookId == audiobookId);
-            if (audiobook == null) return false;
+            if (audiobook == null)
+                return false;
 
             if (!string.IsNullOrWhiteSpace(audiobook.AudioFilePath))
             {
-                var fullPath = Path.Combine(_env.WebRootPath, audiobook.AudioFilePath);
-                if (File.Exists(fullPath))
-                    File.Delete(fullPath);
+                var fullPath = Path.Combine(_env.ContentRootPath, audiobook.AudioFilePath);
+                DeleteFileSafe(fullPath);
             }
 
             _db.Audiobooks.Remove(audiobook);

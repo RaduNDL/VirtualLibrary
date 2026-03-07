@@ -98,7 +98,7 @@ namespace VirtualLibrary.Pages.Audiobooks
                     StatusMessage = $"✓ Audiobook ready for '{product.Title}'! You can now download it.";
                 else if (audiobook?.Status == Models.AudiobookStatus.Failed)
                     StatusMessage = $"✗ Failed to generate audiobook: {audiobook.ErrorMessage}";
-                else if (audiobook?.Status == Models.AudiobookStatus.Rejected)
+                else if (audiobook?.Status == Models.AudiobookStatus.Failed)
                     StatusMessage = $"✗ Rejected: {audiobook.ErrorMessage}";
                 else if (audiobook?.Status == Models.AudiobookStatus.Processing)
                     StatusMessage = $"⏳ Generating audiobook for '{product.Title}'... This may take a few minutes.";

@@ -62,13 +62,6 @@
                     </div>
 
                     <div class="details-actions mt-4">
-                        @if (Model.Product.HasPdfAvailable)
-                        {
-                            <a asp-page="./ReadPdf" asp-route-id="@Model.Product.Id" class="btn-action-success">
-                                <i class='bx bxs-file-pdf'></i> Citeste PDF
-                            </a>
-                        }
-
                         @if (User.IsInRole("Administrator"))
                         {
                             <a asp-page="./Edit" asp-route-id="@Model.Product.Id" class="btn-action-primary">

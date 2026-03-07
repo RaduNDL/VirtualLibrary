@@ -5,7 +5,6 @@ using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using VirtualLibrary.Data;
 using VirtualLibrary.Models;
-using VirtualLibrary.Pages.Products;
 using VirtualLibrary.Services;
 
 namespace VirtualLibrary.Pages.MyBooks
@@ -15,86 +14,110 @@ namespace VirtualLibrary.Pages.MyBooks
     {
         private readonly AppDbContext _context;
         private readonly AudiobookService _audiobookService;
+        private readonly AudiobookQueue _queue;
+        private readonly IWebHostEnvironment _env;
 
-        public ReadBookModel(AppDbContext context, AudiobookService audiobookService)
+        public ReadBookModel(
+            AppDbContext context,
+            AudiobookService audiobookService,
+            AudiobookQueue queue,
+            IWebHostEnvironment env)
         {
             _context = context;
             _audiobookService = audiobookService;
+            _queue = queue;
+            _env = env;
         }
 
         public Product Product { get; set; } = null!;
         public Audiobook? Audiobook { get; set; }
         public bool HasPurchased { get; set; }
+        public string? AudioSourceUrl { get; set; }
 
         public async Task<IActionResult> OnGetAsync(int id)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            // Check if user purchased this product
             HasPurchased = await _context.OrderItems
-                .Include(oi => oi.Order)
-                .AnyAsync(oi => oi.Order.UserId == userId && oi.ProductId == id);
+                .Where(o => o.ProductId == id && o.Order.UserId == userId)
+                .AnyAsync();
 
             if (!HasPurchased)
-            {
                 return RedirectToPage("/Library/Index");
-            }
 
-            var product = await _context.Products
+            Product = await _context.Products
                 .AsNoTracking()
-                .Include(p => p.Category)
-                .FirstOrDefaultAsync(p => p.Id == id);
-
-            if (product == null)
-                return NotFound();
-
-            Product = product;
+                .FirstAsync(p => p.Id == id);
 
             Audiobook = await _context.Audiobooks
                 .AsNoTracking()
                 .FirstOrDefaultAsync(a => a.ProductId == id);
 
+            if (Audiobook?.IsCompleted == true)
+                AudioSourceUrl = $"/MyBooks/ReadBook?handler=Audio&id={id}";
+
             return Page();
         }
 
-        public async Task<IActionResult> OnPostGenerateAudioAsync([FromBody] GenerateAudioRequest request)
+        public async Task<IActionResult> OnPostGenerateAudioAsync(int id)
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var audiobook = await _audiobookService.StartGenerationAsync(id);
 
-            // Verify purchase
-            var hasPurchased = await _context.OrderItems
-                .Include(oi => oi.Order)
-                .AnyAsync(oi => oi.Order.UserId == userId && oi.ProductId == request.ProductId);
+            if (audiobook == null)
+                return new JsonResult(new { error = "Book not found" });
 
-            if (!hasPurchased)
+            if (audiobook.IsCompleted)
             {
-                return new JsonResult(new { error = "You must purchase this book first." }) { StatusCode = 403 };
-            }
-
-            try
-            {
-                var audiobook = await _audiobookService.GenerateAudiobookAsync(request.ProductId);
-
-                if (audiobook == null)
-                    return new JsonResult(new { error = "Product not found." }) { StatusCode = 404 };
-
-                if (audiobook.HasFailed)
-                    return new JsonResult(new { error = audiobook.ErrorMessage }) { StatusCode = 400 };
-
-                if (audiobook.Status == AudiobookStatus.Rejected)
-                    return new JsonResult(new { error = audiobook.ErrorMessage ?? "Content rejected for audio generation." }) { StatusCode = 400 };
-
                 return new JsonResult(new
                 {
-                    audiobookId = audiobook.AudiobookId,
-                    status = audiobook.Status.ToString(),
-                    audioUrl = "/" + audiobook.AudioFilePath
+                    status = "Completed",
+                    audioUrl = $"/MyBooks/ReadBook?handler=Audio&id={id}"
                 });
             }
-            catch (Exception ex)
+
+            await _queue.EnqueueAsync(id);
+
+            return new JsonResult(new
             {
-                return new JsonResult(new { error = "Server error: " + ex.Message }) { StatusCode = 500 };
-            }
+                status = "Processing"
+            });
+        }
+
+        public async Task<IActionResult> OnGetCheckStatusAsync(int id)
+        {
+            var audiobook = await _context.Audiobooks
+                .AsNoTracking()
+                .FirstOrDefaultAsync(a => a.ProductId == id);
+
+            if (audiobook == null)
+                return new JsonResult(new { status = "NotFound" });
+
+            return new JsonResult(new
+            {
+                status = audiobook.Status.ToString(),
+                audioUrl = audiobook.IsCompleted
+                    ? $"/MyBooks/ReadBook?handler=Audio&id={id}"
+                    : null
+            });
+        }
+
+        public async Task<IActionResult> OnGetAudioAsync(int id)
+        {
+            var audiobook = await _context.Audiobooks
+                .AsNoTracking()
+                .FirstOrDefaultAsync(a => a.ProductId == id);
+
+            if (audiobook == null || !audiobook.IsCompleted)
+                return NotFound();
+
+            var path = Path.Combine(_env.ContentRootPath, audiobook.AudioFilePath!);
+
+            if (!System.IO.File.Exists(path))
+                return NotFound();
+
+            var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+
+            return File(stream, "audio/mpeg");
         }
     }
 }

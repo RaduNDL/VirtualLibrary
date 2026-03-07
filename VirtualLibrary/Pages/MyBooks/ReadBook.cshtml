@@ -4,6 +4,11 @@
 @{
     ViewData["Title"] = $"Read: {Model.Product?.Title}";
     Layout = "~/Pages/Shared/_Layout.cshtml";
+
+    var generateUrl = Url.Page("/MyBooks/ReadBook", "GenerateAudio", new { id = Model.Product!.Id });
+    var statusUrl = Url.Page("/MyBooks/ReadBook", "CheckStatus", new { id = Model.Product!.Id });
+    var defaultAudioButtonText = Model.Product.HasPdfAvailable ? "Generate Audiobook" : "Generate Audiobook from Description";
+    var readyAudioButtonText = "Audio Ready - Click to Play";
 }
 
 <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
@@ -36,38 +41,25 @@
                 </p>
             </iframe>
         </div>
+
         <div class="pdf-actions-bar">
             <a href="/@Model.Product.PdfFilePath" download class="btn-download">
                 <i class='bx bx-download'></i> Download PDF
             </a>
+
             <a href="/@Model.Product.PdfFilePath" target="_blank" class="btn-fullscreen">
                 <i class='bx bx-fullscreen'></i> Open in New Tab
             </a>
-            @if (Model.Audiobook?.IsCompleted != true)
-            {
-                <button id="generateAudioBtn" data-product-id="@Model.Product.Id" class="btn-fullscreen" style="background: #6f42c1; border: none; cursor: pointer;">
-                    <i class='bx bx-headphone'></i> Generate Audiobook
-                </button>
-            }
-            else
-            {
-                <button id="generateAudioBtn" data-product-id="@Model.Product.Id" class="btn-fullscreen" style="background: #2BD47D; border: none; cursor: pointer; color: #0A2558;">
-                    <i class='bx bx-headphone'></i> Audio Ready — Click to Play
-                </button>
-            }
-        </div>
 
-        @* Audio Player *@
-        <div id="audioPlayerContainer" style="@(Model.Audiobook?.IsCompleted == true ? "" : "display: none;") margin-top: 15px; width: 100%; background: #fff; padding: 15px; border-radius: 10px; border: 1px solid #dee2e6;">
-            <h5 style="margin-bottom: 10px;"><i class='bx bx-volume-full'></i> Audiobook Player</h5>
-            <audio id="pdfAudioPlayer" controls style="width: 100%;"
-                   @if (Model.Audiobook?.IsCompleted == true && !string.IsNullOrWhiteSpace(Model.Audiobook.AudioFilePath))
-                   {
-                               <text>src="/@Model.Audiobook.AudioFilePath"</text>
-                       }
-    >
-                    Your browser does not support the audio element.
-                </audio>
+            <button id="generateAudioBtn"
+                    data-generate-url="@generateUrl"
+                    data-status-url="@statusUrl"
+                    data-default-label="@defaultAudioButtonText"
+                    data-ready-label="@readyAudioButtonText"
+                    class="btn-fullscreen"
+                    style="background: @(Model.Audiobook?.IsCompleted == true ? "#2BD47D" : "#6f42c1"); border: none; cursor: pointer; color: @(Model.Audiobook?.IsCompleted == true ? "#0A2558" : "#fff");">
+                <i class='bx bx-headphone'></i> @(Model.Audiobook?.IsCompleted == true ? readyAudioButtonText : defaultAudioButtonText)
+            </button>
         </div>
     }
     else
@@ -75,27 +67,18 @@
         <div class="no-pdf-box">
             <i class='bx bx-error-circle'></i>
             <h3>PDF Not Available</h3>
-            <p>This book does not have a PDF associated yet. You can still generate an audiobook from the description.</p>
+            <p>This book does not have a PDF yet. You can still generate an audiobook from the description.</p>
 
             <div style="margin-top: 20px;">
-                @if (Model.Audiobook?.IsCompleted != true)
-                {
-                    <button id="generateAudioBtn" data-product-id="@Model.Product.Id" class="btn-fullscreen" style="background: #6f42c1; border: none; cursor: pointer; padding: 12px 24px; color: #fff; border-radius: 10px; font-weight: 600;">
-                        <i class='bx bx-headphone'></i> Generate Audiobook from Description
-                    </button>
-                }
-            </div>
-
-            <div id="audioPlayerContainer" style="@(Model.Audiobook?.IsCompleted == true ? "" : "display: none;") margin-top: 15px; width: 100%; background: #fff; padding: 15px; border-radius: 10px; border: 1px solid #dee2e6;">
-                <h5 style="margin-bottom: 10px;"><i class='bx bx-volume-full'></i> Audiobook Player</h5>
-                <audio id="pdfAudioPlayer" controls style="width: 100%;"
-                       @if (Model.Audiobook?.IsCompleted == true && !string.IsNullOrWhiteSpace(Model.Audiobook.AudioFilePath))
-                       {
-                                   <text>src="/@Model.Audiobook.AudioFilePath"</text>
-                           }
-    >
-                        Your browser does not support the audio element.
-                    </audio>
+                <button id="generateAudioBtn"
+                        data-generate-url="@generateUrl"
+                        data-status-url="@statusUrl"
+                        data-default-label="@defaultAudioButtonText"
+                        data-ready-label="@readyAudioButtonText"
+                        class="btn-fullscreen"
+                        style="background: @(Model.Audiobook?.IsCompleted == true ? "#2BD47D" : "#6f42c1"); border: none; cursor: pointer; padding: 12px 24px; color: @(Model.Audiobook?.IsCompleted == true ? "#0A2558" : "#fff"); border-radius: 10px; font-weight: 600;">
+                    <i class='bx bx-headphone'></i> @(Model.Audiobook?.IsCompleted == true ? readyAudioButtonText : defaultAudioButtonText)
+                </button>
             </div>
 
             <a asp-page="/MyBooks/Index" class="btn-back" style="margin-top: 15px; display: inline-block;">
@@ -103,6 +86,28 @@
             </a>
         </div>
     }
+
+    <div id="processingIndicator"
+         style="display: none; margin-top: 15px; width: 100%; background: #f0f0ff; padding: 20px; border-radius: 10px; border: 1px solid #d4d4ff; text-align: center;">
+        <div style="margin-bottom: 10px;">
+            <span class="spinner-border spinner-border-sm" style="color: #6f42c1;"></span>
+            <strong style="color: #6f42c1; margin-left: 8px;">Generating audiobook...</strong>
+        </div>
+        <p style="margin: 0; color: #666; font-size: 14px;" id="processingMessage">
+            This usually takes a few seconds. You can keep reading while it generates.
+        </p>
+        <div style="margin-top: 10px; background: #e5e7eb; border-radius: 5px; height: 6px; overflow: hidden;">
+            <div id="progressBar" style="background: #6f42c1; height: 100%; width: 0%; transition: width 0.4s ease;"></div>
+        </div>
+    </div>
+
+    <div id="audioPlayerContainer"
+         style="@(Model.Audiobook?.IsCompleted == true ? "" : "display: none;") margin-top: 15px; width: 100%; background: #fff; padding: 15px; border-radius: 10px; border: 1px solid #dee2e6;">
+        <h5 style="margin-bottom: 10px;"><i class='bx bx-volume-full'></i> Audiobook Player</h5>
+        <audio id="pdfAudioPlayer" controls style="width: 100%;" src="@(Model.AudioSourceUrl ?? string.Empty)">
+            Your browser does not support the audio element.
+        </audio>
+    </div>
 </div>
 
 @section Scripts {

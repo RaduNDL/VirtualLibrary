@@ -79,7 +79,7 @@ namespace VirtualLibrary.Pages.Products
                 if (audiobook.HasFailed)
                     return new JsonResult(new { error = audiobook.ErrorMessage }) { StatusCode = 400 };
 
-                if (audiobook.Status == AudiobookStatus.Rejected)
+                if (audiobook.Status == AudiobookStatus.Failed)
                     return new JsonResult(new { error = audiobook.ErrorMessage ?? "Content rejected for audio generation." }) { StatusCode = 400 };
 
                 return new JsonResult(new

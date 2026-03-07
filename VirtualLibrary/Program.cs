@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using VirtualLibrary.Data;
-using Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore;
 using VirtualLibrary.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -13,7 +12,10 @@ var connectionString = builder.Configuration.GetConnectionString("AppDbContextCo
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
     options.UseSqlServer(connectionString, sql =>
-        sql.EnableRetryOnFailure(maxRetryCount: 5, maxRetryDelay: TimeSpan.FromSeconds(10), errorNumbersToAdd: null));
+        sql.EnableRetryOnFailure(
+            maxRetryCount: 5,
+            maxRetryDelay: TimeSpan.FromSeconds(10),
+            errorNumbersToAdd: null));
 });
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
@@ -46,9 +48,9 @@ builder.WebHost.ConfigureKestrel(options =>
 
 builder.Services.AddRazorPages()
 #if DEBUG
-    .AddMvcOptions(o => o.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true)
+.AddMvcOptions(o => o.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true)
 #endif
-    ;
+;
 
 builder.Services.AddControllers();
 
@@ -57,13 +59,17 @@ builder.Services.AddHttpClient("PdfClient")
     {
         AllowAutoRedirect = true,
         MaxAutomaticRedirections = 10,
-        AutomaticDecompression = System.Net.DecompressionMethods.GZip | System.Net.DecompressionMethods.Deflate
+        AutomaticDecompression =
+            System.Net.DecompressionMethods.GZip |
+            System.Net.DecompressionMethods.Deflate
     });
 
 builder.Services.AddScoped<PdfService>();
 builder.Services.AddScoped<BookImporter>();
 builder.Services.AddScoped<AudiobookService>();
-builder.Services.AddHostedService<AutoPdfBackgroundService>();
+
+builder.Services.AddSingleton<AudiobookQueue>();
+builder.Services.AddHostedService<AudiobookWorker>();
 
 var app = builder.Build();
 
@@ -80,49 +86,47 @@ using (var scope = app.Services.CreateScope())
         var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
         var userManager = services.GetRequiredService<UserManager<IdentityUser>>();
 
-        string[] roleNames = { "Administrator", "Client" };
-        foreach (var roleName in roleNames)
+        string[] roles = { "Administrator", "Client" };
+
+        foreach (var role in roles)
         {
-            if (!await roleManager.RoleExistsAsync(roleName))
+            if (!await roleManager.RoleExistsAsync(role))
             {
-                var r = await roleManager.CreateAsync(new IdentityRole(roleName));
-                if (!r.Succeeded)
-                    logger.LogWarning("Role '{Role}' create failed: {Errors}", roleName, string.Join(", ", r.Errors.Select(e => e.Description)));
+                await roleManager.CreateAsync(new IdentityRole(role));
             }
         }
 
         const string adminEmail = "admin@gmail.com";
         const string adminPassword = "Parola123!";
 
-        var adminUser = await userManager.FindByEmailAsync(adminEmail);
-        if (adminUser == null)
+        var admin = await userManager.FindByEmailAsync(adminEmail);
+
+        if (admin == null)
         {
-            var newAdminUser = new IdentityUser
+            var user = new IdentityUser
             {
                 UserName = adminEmail,
                 Email = adminEmail,
                 EmailConfirmed = true
             };
 
-            var result = await userManager.CreateAsync(newAdminUser, adminPassword);
+            var result = await userManager.CreateAsync(user, adminPassword);
+
             if (result.Succeeded)
             {
-                await userManager.AddToRoleAsync(newAdminUser, "Administrator");
-                logger.LogInformation("Admin user created successfully. Email: {Email}, Password: {Password}", adminEmail, adminPassword);
+                await userManager.AddToRoleAsync(user, "Administrator");
+                logger.LogInformation("Admin user created.");
             }
             else
             {
-                logger.LogWarning("Admin user creation failed: {Errors}", string.Join(", ", result.Errors.Select(e => e.Description)));
+                logger.LogWarning("Admin creation failed: {Errors}",
+                    string.Join(", ", result.Errors.Select(e => e.Description)));
             }
-        }
-        else
-        {
-            logger.LogInformation("Admin user already exists. Email: {Email}", adminEmail);
         }
     }
     catch (Exception ex)
     {
-        logger.LogError(ex, "An error occurred during seeding the database.");
+        logger.LogError(ex, "Database initialization error.");
     }
 }
 
@@ -133,20 +137,16 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
 app.UseStaticFiles();
 
-var audioBooks = Path.Combine(app.Environment.WebRootPath, "audiobooks");
-var pdfs = Path.Combine(app.Environment.WebRootPath, "pdfs");
-var uploads = Path.Combine(app.Environment.WebRootPath, "uploads", "books");
+var audioDir = Path.Combine(app.Environment.WebRootPath, "audiobooks");
+var pdfDir = Path.Combine(app.Environment.WebRootPath, "pdfs");
+var uploadDir = Path.Combine(app.Environment.WebRootPath, "uploads", "books");
 
-if (!Directory.Exists(audioBooks))
-    Directory.CreateDirectory(audioBooks);
-
-if (!Directory.Exists(pdfs))
-    Directory.CreateDirectory(pdfs);
-
-if (!Directory.Exists(uploads))
-    Directory.CreateDirectory(uploads);
+Directory.CreateDirectory(audioDir);
+Directory.CreateDirectory(pdfDir);
+Directory.CreateDirectory(uploadDir);
 
 app.UseRouting();
 
