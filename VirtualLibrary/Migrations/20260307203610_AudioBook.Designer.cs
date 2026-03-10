@@ -12,8 +12,8 @@ using VirtualLibrary.Data;
 namespace VirtualLibrary.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260306100313_BookImporter")]
-    partial class BookImporter
+    [Migration("20260307203610_AudioBook")]
+    partial class AudioBook
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -269,8 +269,8 @@ namespace VirtualLibrary.Migrations
                         .HasColumnType("time");
 
                     b.Property<string>("ErrorMessage")
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
 
                     b.Property<int>("ProductId")
                         .HasColumnType("int");
@@ -284,7 +284,8 @@ namespace VirtualLibrary.Migrations
 
                     b.HasKey("AudiobookId");
 
-                    b.HasIndex("ProductId");
+                    b.HasIndex("ProductId")
+                        .IsUnique();
 
                     b.ToTable("Audiobooks");
                 });

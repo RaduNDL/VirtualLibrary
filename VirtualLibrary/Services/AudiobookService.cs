@@ -1,7 +1,6 @@
-﻿using EdgeTtsSharp;
-using EdgeTtsSharp.Structures;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using System.Text.RegularExpressions;
+using System.Speech.Synthesis;
 using VirtualLibrary.Data;
 using VirtualLibrary.Models;
 
@@ -14,9 +13,6 @@ namespace VirtualLibrary.Services
         private readonly IConfiguration _config;
         private readonly PdfService _pdfService;
         private readonly ILogger<AudiobookService> _logger;
-
-        private static IReadOnlyList<Voice>? _cachedVoices;
-        private static readonly SemaphoreSlim _voiceLock = new(1, 1);
 
         public AudiobookService(
             AppDbContext db,
@@ -203,85 +199,45 @@ namespace VirtualLibrary.Services
                 parts.Add(product.Description);
 
             var fullText = string.Join(". ", parts);
-            fullText = Regex.Replace(fullText, @"\s+", " ").Trim();
 
-            if (fullText.Length > 2500)
-                fullText = fullText[..2500].Trim();
+            fullText = Regex.Replace(fullText, "<.*?>", string.Empty);
+            fullText = Regex.Replace(fullText, @"[\p{C}-[\r\n\t]]+", "");
+            fullText = Regex.Replace(fullText, @"\s+", " ").Trim();
 
             return fullText;
         }
-
-        private async Task<Voice?> GetVoiceAsync(string preferredVoiceName)
-        {
-            await _voiceLock.WaitAsync();
-
-            try
-            {
-                if (_cachedVoices == null || _cachedVoices.Count == 0)
-                    _cachedVoices = (await EdgeTts.GetVoices()).ToList();
-
-                var voice = _cachedVoices.FirstOrDefault(v => v.ShortName == preferredVoiceName)
-                            ?? _cachedVoices.FirstOrDefault(v => v.ShortName == "en-US-AriaNeural")
-                            ?? _cachedVoices.FirstOrDefault();
-
-                return voice;
-            }
-            finally
-            {
-                _voiceLock.Release();
-            }
-        }
-
         private async Task<string> SynthesizeSpeechAsync(int productId, string text)
         {
             var outputDir = Path.Combine(_env.ContentRootPath, "Generated", "Audiobooks");
             Directory.CreateDirectory(outputDir);
 
-            var fileName = $"{productId}_{Guid.NewGuid():N}.mp3";
+            var fileName = $"{productId}_{Guid.NewGuid():N}.wav";
             var finalPath = Path.Combine(outputDir, fileName);
-            var tempPath = Path.Combine(Path.GetTempPath(), fileName);
 
-            try
+            return await Task.Run(() =>
             {
-                var preferredVoice = ContainsCjk(text)
-                    ? _config["EdgeTTS:ChineseVoice"] ?? "zh-CN-XiaoxiaoNeural"
-                    : _config["EdgeTTS:Voice"] ?? "en-US-AriaNeural";
-
-                var voice = await GetVoiceAsync(preferredVoice);
-
-                if (voice == null || string.IsNullOrWhiteSpace(voice.ShortName))
-                    return string.Empty;
-
-                await voice.SaveAudioToFile(text, tempPath);
-
-                if (!File.Exists(tempPath))
-                    return string.Empty;
-
-                var tempLength = new FileInfo(tempPath).Length;
-                if (tempLength < 100)
+                try
                 {
-                    DeleteFileSafe(tempPath);
-                    return string.Empty;
+                    using var synthesizer = new SpeechSynthesizer();
+                    synthesizer.SetOutputToWaveFile(finalPath);
+                    synthesizer.Speak(text);
+
+                    var finalLength = new FileInfo(finalPath).Length;
+                    if (finalLength < 100)
+                    {
+                        DeleteFileSafe(finalPath);
+                        return string.Empty;
+                    }
+
+                    return Path.Combine("Generated", "Audiobooks", fileName).Replace('\\', '/');
                 }
-
-                File.Move(tempPath, finalPath, true);
-
-                var finalLength = new FileInfo(finalPath).Length;
-                if (finalLength < 100)
+                catch (Exception ex)
                 {
+                    _logger.LogError(ex, "Speech synthesis failed for product {ProductId}", productId);
                     DeleteFileSafe(finalPath);
                     return string.Empty;
                 }
-
-                return Path.Combine("Generated", "Audiobooks", fileName);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Speech synthesis failed for product {ProductId}", productId);
-                DeleteFileSafe(tempPath);
-                DeleteFileSafe(finalPath);
-                return string.Empty;
-            }
+            });
         }
 
         private bool AudioFileExists(Audiobook audiobook)
@@ -291,22 +247,6 @@ namespace VirtualLibrary.Services
 
             var fullPath = Path.Combine(_env.ContentRootPath, audiobook.AudioFilePath);
             return File.Exists(fullPath);
-        }
-
-        private static bool ContainsCjk(string text)
-        {
-            foreach (var ch in text)
-            {
-                if ((ch >= 0x4E00 && ch <= 0x9FFF) ||
-                    (ch >= 0x3400 && ch <= 0x4DBF) ||
-                    (ch >= 0x3040 && ch <= 0x30FF) ||
-                    (ch >= 0xAC00 && ch <= 0xD7AF))
-                {
-                    return true;
-                }
-            }
-
-            return false;
         }
 
         private static void DeleteFileSafe(string path)

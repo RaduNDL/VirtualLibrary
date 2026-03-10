@@ -54,7 +54,7 @@ namespace VirtualLibrary.Pages.MyBooks
                 .FirstOrDefaultAsync(a => a.ProductId == id);
 
             if (Audiobook?.IsCompleted == true)
-                AudioSourceUrl = $"/MyBooks/ReadBook?handler=Audio&id={id}";
+                AudioSourceUrl = Url.Page("/MyBooks/ReadBook", "Audio", new { id = id });
 
             return Page();
         }
@@ -71,7 +71,7 @@ namespace VirtualLibrary.Pages.MyBooks
                 return new JsonResult(new
                 {
                     status = "Completed",
-                    audioUrl = $"/MyBooks/ReadBook?handler=Audio&id={id}"
+                    audioUrl = Url.Page("/MyBooks/ReadBook", "Audio", new { id = id })
                 });
             }
 
@@ -96,7 +96,7 @@ namespace VirtualLibrary.Pages.MyBooks
             {
                 status = audiobook.Status.ToString(),
                 audioUrl = audiobook.IsCompleted
-                    ? $"/MyBooks/ReadBook?handler=Audio&id={id}"
+                    ? Url.Page("/MyBooks/ReadBook", "Audio", new { id = id })
                     : null
             });
         }
@@ -115,9 +115,10 @@ namespace VirtualLibrary.Pages.MyBooks
             if (!System.IO.File.Exists(path))
                 return NotFound();
 
-            var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
-
-            return File(stream, "audio/mpeg");
+            return new PhysicalFileResult(path, "audio/wav")
+            {
+                EnableRangeProcessing = true
+            };
         }
     }
 }

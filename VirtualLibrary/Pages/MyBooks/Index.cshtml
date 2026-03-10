@@ -83,7 +83,7 @@
                                 }
                             </div>
 
-                            @* Audiobook Status Section *@
+                          
                             <div class="audiobook-status-section">
                                 @if (audiobook == null)
                                 {
@@ -131,7 +131,6 @@
                                 }
                             </div>
 
-                            @* Audio Player (if completed) *@
                             @if (isCompleted && !string.IsNullOrWhiteSpace(audiobook?.AudioFilePath))
                             {
                                 <div class="audio-player-inline">
@@ -142,7 +141,6 @@
                                 </div>
                             }
 
-                            @* Action Buttons *@
                             <div class="book-actions-bar">
                                 @if (product.HasPdfAvailable)
                                 {

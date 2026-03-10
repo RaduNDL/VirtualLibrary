@@ -147,14 +147,16 @@
                     return;
                 }
 
-                if (data.status === 'Completed' && data.audioUrl) {
+                const currentStatus = data.status ? data.status.toLowerCase() : '';
+
+                if (currentStatus === 'completed' && data.audioUrl) {
                     clearPolling();
                     completeProgress();
                     showAudioReady(data.audioUrl);
                     return;
                 }
 
-                if (data.status === 'Failed') {
+                if (currentStatus === 'failed') {
                     clearPolling();
                     showError(data.error || 'Audiobook generation failed.');
                 }
@@ -162,7 +164,6 @@
             }
         }, 2000);
     }
-
     function clearPolling() {
         if (pollInterval) {
             clearInterval(pollInterval);

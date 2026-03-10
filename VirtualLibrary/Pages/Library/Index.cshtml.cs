@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -29,21 +30,20 @@ namespace VirtualLibrary.Pages.Library
 
         public async Task OnGetAsync()
         {
-            var query = _context.Products
+            var allProducts = await _context.Products
                 .AsNoTracking()
                 .Include(p => p.Category)
                 .Include(p => p.Supplier)
-                .AsQueryable();
+                .ToListAsync();
 
             if (!string.IsNullOrWhiteSpace(q))
             {
-                query = query.Where(p =>
-                    p.Title.Contains(q) ||
-                    (p.Author != null && p.Author.Contains(q)) ||
-                    (p.Isbn != null && p.Isbn.Contains(q)));
+                Products = PerformTfIdfSearch(allProducts, q);
             }
-
-            Products = await query.ToListAsync();
+            else
+            {
+                Products = allProducts;
+            }
 
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
@@ -56,6 +56,48 @@ namespace VirtualLibrary.Pages.Library
 
                 FavoriteProductIds = favIds.ToHashSet();
             }
+        }
+
+        private List<Product> PerformTfIdfSearch(List<Product> allProducts, string searchQuery)
+        {
+            var separators = new[] { ' ', '\t', '\n', '\r', '.', ',', ';', '!', '?', '-', ':' };
+            var queryTerms = searchQuery.ToLowerInvariant().Split(separators, StringSplitOptions.RemoveEmptyEntries);
+
+            if (queryTerms.Length == 0) return allProducts;
+
+            var documents = allProducts.Select(p => p.Title.ToLowerInvariant()).ToList();
+            var N = documents.Count;
+            var idfMap = new Dictionary<string, double>();
+
+            foreach (var term in queryTerms.Distinct())
+            {
+                var df = documents.Count(d => d.Split(separators, StringSplitOptions.RemoveEmptyEntries).Contains(term));
+                idfMap[term] = Math.Log((double)N / (1 + df)) + 1;
+            }
+
+            return allProducts.Select(p =>
+            {
+                var docTerms = p.Title.ToLowerInvariant().Split(separators, StringSplitOptions.RemoveEmptyEntries);
+                var docLength = docTerms.Length;
+                double score = 0;
+
+                if (docLength > 0)
+                {
+                    foreach (var term in queryTerms)
+                    {
+                        var tf = (double)docTerms.Count(t => t == term) / docLength;
+                        if (idfMap.TryGetValue(term, out var idf))
+                        {
+                            score += tf * idf;
+                        }
+                    }
+                }
+                return new { Product = p, Score = score };
+            })
+            .Where(x => x.Score > 0)
+            .OrderByDescending(x => x.Score)
+            .Select(x => x.Product)
+            .ToList();
         }
     }
 }

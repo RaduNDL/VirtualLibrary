@@ -278,18 +278,22 @@ namespace VirtualLibrary.Services
                     using var pdfDoc = new iText.Kernel.Pdf.PdfDocument(pdfReader);
                     var text = new System.Text.StringBuilder();
 
-                    for (int i = 1; i <= Math.Min(pdfDoc.GetNumberOfPages(), 10); i++)
+                    for (int i = 1; i <= pdfDoc.GetNumberOfPages(); i++)
                     {
                         var strategy = new SimpleTextExtractionStrategy();
                         var pageText = PdfTextExtractor.GetTextFromPage(pdfDoc.GetPage(i), strategy);
                         text.Append(pageText);
                     }
-                    return text.ToString();
+
+                    var rawText = text.ToString();
+                    return System.Text.RegularExpressions.Regex.Replace(rawText, @"[\p{C}-[\r\n\t]]+", "");
                 }
-                catch { return string.Empty; }
+                catch
+                {
+                    return string.Empty;
+                }
             });
         }
-
         public async Task<bool> DeletePdfAsync(int productId)
         {
             await Task.CompletedTask;

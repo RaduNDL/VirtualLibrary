@@ -34,6 +34,10 @@ namespace VirtualLibrary.Services
 
                     await audiobookService.GenerateAudiobookAsync(productId);
                 }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Audiobook worker error.");
