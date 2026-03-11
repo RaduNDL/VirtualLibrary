@@ -10,91 +10,217 @@
 
 <div class="mgmt-wrapper">
     <div class="mgmt-container-wide">
+
         <header class="mgmt-header">
-            <a asp-page="./Index" class="back-link"><i class='bx bx-left-arrow-alt'></i> Back to Books</a>
+            <a asp-page="./Index" class="back-link">
+                <i class='bx bx-left-arrow-alt'></i> Back to Books
+            </a>
+
             <h2 class="mt-2">Edit Book: @Model.Product.Title</h2>
         </header>
 
         <div class="form-card">
+
             <form method="post" enctype="multipart/form-data">
+
                 <div asp-validation-summary="ModelOnly" class="text-error-summary"></div>
+
                 <input type="hidden" asp-for="Product.Id" />
 
                 <div class="row g-4">
+
                     <div class="col-md-4">
+
                         <div class="current-cover-preview">
-                            <img src="~/@Model.Product.ImagePath" alt="@Model.Product.Title" asp-append-version="true" onerror="this.src='/images/no-cover.svg';this.onerror=null;" />
+                            <img src="~/@Model.Product.ImagePath"
+                                 alt="@Model.Product.Title"
+                                 asp-append-version="true"
+                                 onerror="this.src='/images/no-cover.svg';this.onerror=null;" />
                         </div>
+
                         <div class="input-group-modern mt-3 border-dash-box">
+
                             <label asp-for="ImageFile">Replace Cover (Max 5MB)</label>
-                            <input asp-for="ImageFile" type="file" accept=".jpg,.jpeg,.png,.webp" />
+
+                            <input asp-for="ImageFile"
+                                   type="file"
+                                   accept=".jpg,.jpeg,.png,.webp" />
+
                             <span asp-validation-for="ImageFile" class="text-error"></span>
+
                         </div>
+
                     </div>
 
                     <div class="col-md-8">
+
                         <div class="row g-3">
+
                             <div class="col-md-8">
+
                                 <div class="input-group-modern">
+
                                     <label asp-for="Product.Title"></label>
+
                                     <input asp-for="Product.Title" />
+
                                     <span asp-validation-for="Product.Title" class="text-error"></span>
+
                                 </div>
+
                             </div>
+
                             <div class="col-md-4">
+
                                 <div class="input-group-modern">
+
                                     <label asp-for="Product.Price"></label>
+
                                     <input asp-for="Product.Price" />
+
                                     <span asp-validation-for="Product.Price" class="text-error"></span>
+
                                 </div>
+
                             </div>
 
                             <div class="col-md-6">
+
                                 <div class="input-group-modern">
+
                                     <label asp-for="Product.Author"></label>
+
                                     <input asp-for="Product.Author" />
+
                                 </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="input-group-modern">
-                                    <label asp-for="Product.Isbn"></label>
-                                    <input asp-for="Product.Isbn" />
-                                </div>
+
                             </div>
 
                             <div class="col-md-6">
+
                                 <div class="input-group-modern">
+
+                                    <label asp-for="Product.Isbn"></label>
+
+                                    <input asp-for="Product.Isbn" />
+
+                                </div>
+
+                            </div>
+
+                            <div class="col-md-6">
+
+                                <div class="input-group-modern">
+
+                                    <label asp-for="Product.Publisher"></label>
+
+                                    <input asp-for="Product.Publisher" />
+
+                                </div>
+
+                            </div>
+
+                            <div class="col-md-3">
+
+                                <div class="input-group-modern">
+
+                                    <label asp-for="Product.PublishedYear"></label>
+
+                                    <input asp-for="Product.PublishedYear" type="number" />
+
+                                </div>
+
+                            </div>
+
+                            <div class="col-md-3">
+
+                                <div class="input-group-modern">
+
+                                    <label asp-for="Product.PageCount"></label>
+
+                                    <input asp-for="Product.PageCount" type="number" />
+
+                                </div>
+
+                            </div>
+
+                            <div class="col-md-6">
+
+                                <div class="input-group-modern">
+
+                                    <label asp-for="Product.Language"></label>
+
+                                    <input asp-for="Product.Language" />
+
+                                </div>
+
+                            </div>
+
+                            <div class="col-md-6">
+
+                                <div class="input-group-modern">
+
+                                    <label asp-for="Product.Rating"></label>
+
+                                    <input asp-for="Product.Rating"
+                                           type="number"
+                                           step="0.1"
+                                           min="0"
+                                           max="5" />
+
+                                </div>
+
+                            </div>
+
+                            <div class="col-md-6">
+
+                                <div class="input-group-modern">
+
                                     <label asp-for="Product.CategoryId">Category</label>
-                                    <select asp-for="Product.CategoryId" asp-items="Model.Categories">
+
+                                    <select asp-for="Product.CategoryId"
+                                            asp-items="Model.Categories">
                                         <option value="">— None —</option>
                                     </select>
+
                                 </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="input-group-modern">
-                                    <label asp-for="Product.Stock"></label>
-                                    <input asp-for="Product.Stock" />
-                                </div>
+
                             </div>
 
                             <div class="col-12">
+
                                 <div class="input-group-modern">
+
                                     <label asp-for="Product.Description"></label>
+
                                     <textarea asp-for="Product.Description" rows="6"></textarea>
+
                                 </div>
+
                             </div>
+
                         </div>
 
                         <div class="form-actions mt-4">
+
                             <button type="submit" class="btn-save">
                                 <i class='bx bx-save'></i> Save Changes
                             </button>
-                            <a asp-page="./Index" class="btn-cancel">Cancel</a>
+
+                            <a asp-page="./Index" class="btn-cancel">
+                                Cancel
+                            </a>
+
                         </div>
+
                     </div>
+
                 </div>
+
             </form>
+
         </div>
+
     </div>
 </div>
 

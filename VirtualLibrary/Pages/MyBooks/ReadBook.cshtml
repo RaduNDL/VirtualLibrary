@@ -1,14 +1,8 @@
 ﻿@page "{id:int}"
-@using VirtualLibrary.Models
 @model VirtualLibrary.Pages.MyBooks.ReadBookModel
 @{
-    ViewData["Title"] = $"Read: {Model.Product?.Title}";
+    ViewData["Title"] = $"Read: {Model.Product.Title}";
     Layout = "~/Pages/Shared/_Layout.cshtml";
-
-    var generateUrl = Url.Page("/MyBooks/ReadBook", "GenerateAudio", new { id = Model.Product!.Id });
-    var statusUrl = Url.Page("/MyBooks/ReadBook", "CheckStatus", new { id = Model.Product!.Id });
-    var defaultAudioButtonText = Model.Product.HasPdfAvailable ? "Generate Audiobook" : "Generate Audiobook from Description";
-    var readyAudioButtonText = "Audio Ready - Click to Play";
 }
 
 <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
@@ -19,47 +13,64 @@
         <a asp-page="/MyBooks/Index" class="back-link">
             <i class='bx bx-left-arrow-alt'></i> Back to My Books
         </a>
-        <h2><i class='bx bxs-file-pdf'></i> @Model.Product!.Title</h2>
+
+        <h2><i class='bx bxs-file-pdf'></i> @Model.Product.Title</h2>
+
         @if (!string.IsNullOrWhiteSpace(Model.Product.Author))
         {
             <span class="author-sub">by @Model.Product.Author</span>
         }
     </header>
 
-    @Html.AntiForgeryToken()
+    @if (!string.IsNullOrWhiteSpace(Model.StatusMessage))
+    {
+        <div class="alert alert-info mb-3">
+            @Html.Raw(Model.StatusMessage)
+        </div>
+    }
 
-    @if (Model.Product.HasPdfAvailable)
+    @if (!string.IsNullOrWhiteSpace(Model.PdfUrl))
     {
         <div class="pdf-viewer-container">
-            <iframe src="/@Model.Product.PdfFilePath"
+            <iframe src="@Model.PdfUrl"
                     class="pdf-iframe"
                     title="@Model.Product.Title"
                     allowfullscreen>
                 <p>
-                    Your browser does not support PDF iframes.
-                    <a href="/@Model.Product.PdfFilePath" target="_blank">Download the PDF</a>.
+                    Your browser does not support inline PDFs.
+                    <a href="@Model.PdfUrl" target="_blank">Open the PDF</a>.
                 </p>
             </iframe>
         </div>
 
         <div class="pdf-actions-bar">
-            <a href="/@Model.Product.PdfFilePath" download class="btn-download">
+            <a href="@Model.PdfUrl" download class="btn-download">
                 <i class='bx bx-download'></i> Download PDF
             </a>
 
-            <a href="/@Model.Product.PdfFilePath" target="_blank" class="btn-fullscreen">
+            <a href="@Model.PdfUrl" target="_blank" class="btn-fullscreen">
                 <i class='bx bx-fullscreen'></i> Open in New Tab
             </a>
 
-            <button id="generateAudioBtn"
-                    data-generate-url="@generateUrl"
-                    data-status-url="@statusUrl"
-                    data-default-label="@defaultAudioButtonText"
-                    data-ready-label="@readyAudioButtonText"
-                    class="btn-fullscreen"
-                    style="background: @(Model.Audiobook?.IsCompleted == true ? "#2BD47D" : "#6f42c1"); border: none; cursor: pointer; color: @(Model.Audiobook?.IsCompleted == true ? "#0A2558" : "#fff");">
-                <i class='bx bx-headphone'></i> @(Model.Audiobook?.IsCompleted == true ? readyAudioButtonText : defaultAudioButtonText)
-            </button>
+            @if (!string.IsNullOrWhiteSpace(Model.Product.DescriptionPdfPath))
+            {
+                <a asp-page="/Products/DescriptionPdf"
+                   asp-route-id="@Model.Product.Id"
+                   class="btn-fullscreen">
+                    <i class='bx bx-detail'></i> Details PDF
+                </a>
+            }
+
+            <form method="post" asp-page-handler="GenerateAudio" class="d-inline">
+                <button type="submit"
+                        class="btn-fullscreen"
+                        style="background:#6f42c1; border:none; cursor:pointer; color:#fff;">
+                    <i class='bx bx-headphone'></i>
+                    @(Model.Audiobook?.Status == VirtualLibrary.Models.AudiobookStatus.Completed
+                                    ? "Regenerate Audiobook"
+                                    : "Generate Audiobook")
+                </button>
+            </form>
         </div>
     }
     else
@@ -67,49 +78,39 @@
         <div class="no-pdf-box">
             <i class='bx bx-error-circle'></i>
             <h3>PDF Not Available</h3>
-            <p>This book does not have a PDF yet. You can still generate an audiobook from the description.</p>
+            <p>This book does not have an attached book PDF yet.</p>
 
-            <div style="margin-top: 20px;">
-                <button id="generateAudioBtn"
-                        data-generate-url="@generateUrl"
-                        data-status-url="@statusUrl"
-                        data-default-label="@defaultAudioButtonText"
-                        data-ready-label="@readyAudioButtonText"
-                        class="btn-fullscreen"
-                        style="background: @(Model.Audiobook?.IsCompleted == true ? "#2BD47D" : "#6f42c1"); border: none; cursor: pointer; padding: 12px 24px; color: @(Model.Audiobook?.IsCompleted == true ? "#0A2558" : "#fff"); border-radius: 10px; font-weight: 600;">
-                    <i class='bx bx-headphone'></i> @(Model.Audiobook?.IsCompleted == true ? readyAudioButtonText : defaultAudioButtonText)
-                </button>
+            <div class="d-flex justify-content-center gap-2 mt-3 flex-wrap">
+                @if (!string.IsNullOrWhiteSpace(Model.Product.DescriptionPdfPath))
+                {
+                    <a asp-page="/Products/DescriptionPdf"
+                       asp-route-id="@Model.Product.Id"
+                       class="btn-back">
+                        View Details PDF
+                    </a>
+                }
+
+                <form method="post" asp-page-handler="GenerateAudio" class="d-inline">
+                    <button type="submit"
+                            class="btn-back"
+                            style="border:none;">
+                        Generate Audiobook
+                    </button>
+                </form>
             </div>
-
-            <a asp-page="/MyBooks/Index" class="btn-back" style="margin-top: 15px; display: inline-block;">
-                Back to My Books
-            </a>
         </div>
     }
 
-    <div id="processingIndicator"
-         style="display: none; margin-top: 15px; width: 100%; background: #f0f0ff; padding: 20px; border-radius: 10px; border: 1px solid #d4d4ff; text-align: center;">
-        <div style="margin-bottom: 10px;">
-            <span class="spinner-border spinner-border-sm" style="color: #6f42c1;"></span>
-            <strong style="color: #6f42c1; margin-left: 8px;">Generating audiobook...</strong>
-        </div>
-        <p style="margin: 0; color: #666; font-size: 14px;" id="processingMessage">
-            This usually takes a few seconds. You can keep reading while it generates.
-        </p>
-        <div style="margin-top: 10px; background: #e5e7eb; border-radius: 5px; height: 6px; overflow: hidden;">
-            <div id="progressBar" style="background: #6f42c1; height: 100%; width: 0%; transition: width 0.4s ease;"></div>
-        </div>
-    </div>
+    @if (Model.Audiobook?.Status == VirtualLibrary.Models.AudiobookStatus.Completed && !string.IsNullOrWhiteSpace(Model.AudioSourceUrl))
+    {
+        <div class="mt-3" style="width:100%; background:#fff; padding:15px; border-radius:10px; border:1px solid #dee2e6;">
+            <h5 style="margin-bottom:10px;">
+                <i class='bx bx-volume-full'></i> Audiobook Player
+            </h5>
 
-    <div id="audioPlayerContainer"
-         style="@(Model.Audiobook?.IsCompleted == true ? "" : "display: none;") margin-top: 15px; width: 100%; background: #fff; padding: 15px; border-radius: 10px; border: 1px solid #dee2e6;">
-        <h5 style="margin-bottom: 10px;"><i class='bx bx-volume-full'></i> Audiobook Player</h5>
-        <audio id="pdfAudioPlayer" controls style="width: 100%;" src="@(Model.AudioSourceUrl ?? string.Empty)">
-            Your browser does not support the audio element.
-        </audio>
-    </div>
+            <audio controls style="width:100%;" src="@Model.AudioSourceUrl">
+                Your browser does not support the audio element.
+            </audio>
+        </div>
+    }
 </div>
-
-@section Scripts {
-    <script src="~/js/pdf-viewer.js"></script>
-}

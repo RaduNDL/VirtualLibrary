@@ -67,7 +67,6 @@ namespace VirtualLibrary.Pages.Products
                 Author = "Unknown",
                 Description = extractedText.Length > 4000 ? extractedText.Substring(0, 4000) : extractedText,
                 Price = 0.0m,
-                Stock = 1,
                 CreatedAtUtc = DateTime.UtcNow
             };
 

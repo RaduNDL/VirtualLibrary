@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace VirtualLibrary.Migrations
 {
     /// <inheritdoc />
-    public partial class AudioBook : Migration
+    public partial class migration1 : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -213,15 +213,23 @@ namespace VirtualLibrary.Migrations
                     Author = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
                     Isbn = table.Column<string>(type: "nvarchar(13)", maxLength: 13, nullable: true),
                     Description = table.Column<string>(type: "nvarchar(4000)", maxLength: 4000, nullable: true),
+                    Publisher = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
+                    PublishedYear = table.Column<int>(type: "int", nullable: true),
+                    PageCount = table.Column<int>(type: "int", nullable: true),
+                    Language = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
+                    Rating = table.Column<decimal>(type: "decimal(3,2)", precision: 3, scale: 2, nullable: true),
                     Price = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
-                    Stock = table.Column<int>(type: "int", nullable: false),
                     ImagePath = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
-                    PdfFilePath = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
-                    PdfSource = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
+                    DescriptionPdfPath = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    BookPdfPath = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    BookPdfSource = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
                     CategoryId = table.Column<int>(type: "int", nullable: true),
                     SupplierId = table.Column<int>(type: "int", nullable: true),
                     CreatedAtUtc = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UpdatedAtUtc = table.Column<DateTime>(type: "datetime2", nullable: true)
+                    UpdatedAtUtc = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    PdfFilePath = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    PdfSource = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    HasPdfAvailable = table.Column<bool>(type: "bit", nullable: false)
                 },
                 constraints: table =>
                 {

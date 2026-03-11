@@ -1,7 +1,7 @@
 ﻿@page "{id:int}"
-@model VirtualLibrary.Pages.Products.ReadPdfModel
+@model VirtualLibrary.Pages.Products.DescriptionPdfModel
 @{
-    ViewData["Title"] = $"Read: {Model.Product.Title}";
+    ViewData["Title"] = $"Details PDF - {Model.Product.Title}";
     Layout = "~/Pages/Shared/_Layout.cshtml";
 }
 
@@ -14,7 +14,9 @@
             <i class='bx bx-left-arrow-alt'></i> Back to Book
         </a>
 
-        <h2><i class='bx bxs-file-pdf'></i> @Model.Product.Title</h2>
+        <h2>
+            <i class='bx bxs-file-pdf'></i> Details PDF - @Model.Product.Title
+        </h2>
 
         @if (!string.IsNullOrWhiteSpace(Model.Product.Author))
         {
@@ -24,7 +26,7 @@
 
     <div class="row g-3 mb-3">
         <div class="col-lg-4">
-            <div class="card h-100 border-0 shadow-sm">
+            <div class="card h-100 shadow-sm border-0">
                 <div class="card-body">
                     <h5 class="fw-bold mb-3">Book Details</h5>
 
@@ -40,14 +42,24 @@
                         <p class="mb-2"><strong>Category:</strong> @Model.Product.Category.Name</p>
                     }
 
-                    @if (!string.IsNullOrWhiteSpace(Model.Product.Supplier?.Name))
+                    @if (!string.IsNullOrWhiteSpace(Model.Product.Publisher))
                     {
-                        <p class="mb-2"><strong>Supplier:</strong> @Model.Product.Supplier.Name</p>
+                        <p class="mb-2"><strong>Publisher:</strong> @Model.Product.Publisher</p>
                     }
 
                     @if (!string.IsNullOrWhiteSpace(Model.Product.Isbn))
                     {
                         <p class="mb-2"><strong>ISBN:</strong> @Model.Product.Isbn</p>
+                    }
+
+                    @if (Model.Product.PublishedYear.HasValue)
+                    {
+                        <p class="mb-2"><strong>Published Year:</strong> @Model.Product.PublishedYear.Value</p>
+                    }
+
+                    @if (Model.Product.PageCount.HasValue)
+                    {
+                        <p class="mb-2"><strong>Page Count:</strong> @Model.Product.PageCount.Value</p>
                     }
 
                     <p class="mb-0"><strong>Price:</strong> @Model.Product.Price.ToString("0.00") RON</p>
@@ -59,7 +71,7 @@
             <div class="pdf-viewer-container">
                 <iframe src="@Model.PdfUrl"
                         class="pdf-iframe"
-                        title="@Model.Product.Title"
+                        title="Details PDF for @Model.Product.Title"
                         allowfullscreen>
                     <p>
                         Your browser does not support inline PDFs.
@@ -77,12 +89,12 @@
                     <i class='bx bx-fullscreen'></i> Open in New Tab
                 </a>
 
-                @if (!string.IsNullOrWhiteSpace(Model.Product.DescriptionPdfPath))
+                @if (!string.IsNullOrWhiteSpace(Model.Product.PdfFilePath))
                 {
-                    <a asp-page="./DescriptionPdf"
+                    <a asp-page="./ReadPdf"
                        asp-route-id="@Model.Product.Id"
                        class="btn-fullscreen">
-                        <i class='bx bx-detail'></i> View Details PDF
+                        <i class='bx bx-book-open'></i> Open Book PDF
                     </a>
                 }
             </div>

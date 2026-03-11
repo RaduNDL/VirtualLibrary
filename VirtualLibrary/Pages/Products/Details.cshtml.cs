@@ -11,24 +11,40 @@ namespace VirtualLibrary.Pages.Products
     public class DetailsModel : PageModel
     {
         private readonly AppDbContext _context;
-        public DetailsModel(AppDbContext context) => _context = context;
 
-        public Product Product { get; set; } = null!;
+        public DetailsModel(AppDbContext context)
+        {
+            _context = context;
+        }
+
+        public Product Product { get; private set; } = null!;
 
         [BindProperty(SupportsGet = true)]
         public string? ReturnUrl { get; set; }
 
         public string SafeReturnUrl { get; private set; } = "/";
 
+        public bool HasBookPdf => !string.IsNullOrWhiteSpace(Product?.PdfFilePath);
+        public bool HasDescriptionPdf => !string.IsNullOrWhiteSpace(Product?.DescriptionPdfPath);
+
+        public string? BookReaderUrl =>
+            Product == null ? null : Url.Page("/Products/ReadPdf", new { id = Product.Id });
+
+        public string? DescriptionReaderUrl =>
+            Product == null ? null : Url.Page("/Products/DescriptionPdf", new { id = Product.Id });
+
         public async Task<IActionResult> OnGetAsync(int id)
         {
-            Product = await _context.Products
+            var product = await _context.Products
                 .AsNoTracking()
                 .Include(p => p.Category)
                 .Include(p => p.Supplier)
-                .FirstOrDefaultAsync(m => m.Id == id);
+                .FirstOrDefaultAsync(p => p.Id == id);
 
-            if (Product is null) return NotFound();
+            if (product == null)
+                return NotFound();
+
+            Product = product;
 
             var candidate = !string.IsNullOrWhiteSpace(ReturnUrl)
                 ? ReturnUrl
@@ -36,11 +52,11 @@ namespace VirtualLibrary.Pages.Products
 
             if (!string.IsNullOrWhiteSpace(candidate) && Url.IsLocalUrl(candidate))
             {
-                SafeReturnUrl = candidate!;
+                SafeReturnUrl = candidate;
             }
             else
             {
-                SafeReturnUrl = Url.Page("/Library/Index") ?? Url.Page("/Index") ?? "/";
+                SafeReturnUrl = Url.Page("/Library/Index") ?? "/";
             }
 
             return Page();

@@ -1,7 +1,4 @@
-using System.Collections.Generic;
-using System.Linq;
 using System.Security.Claims;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -18,15 +15,18 @@ namespace VirtualLibrary.Pages.MyBooks
         private readonly AppDbContext _context;
         private readonly AudiobookService _audiobookService;
         private readonly ILogger<IndexModel> _logger;
+        private readonly IWebHostEnvironment _env;
 
         public IndexModel(
             AppDbContext context,
             AudiobookService audiobookService,
-            ILogger<IndexModel> logger)
+            ILogger<IndexModel> logger,
+            IWebHostEnvironment env)
         {
             _context = context;
             _audiobookService = audiobookService;
             _logger = logger;
+            _env = env;
         }
 
         public IList<PurchasedBookViewModel> PurchasedBooks { get; set; } = new List<PurchasedBookViewModel>();
@@ -38,7 +38,6 @@ namespace VirtualLibrary.Pages.MyBooks
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            // Get all distinct products this user has purchased
             var purchasedProductIds = await _context.OrderItems
                 .Include(oi => oi.Order)
                 .Where(oi => oi.Order.UserId == userId)
@@ -58,7 +57,6 @@ namespace VirtualLibrary.Pages.MyBooks
                 .Where(a => purchasedProductIds.Contains(a.ProductId))
                 .ToListAsync();
 
-            // Get order dates for each product
             var orderDates = await _context.OrderItems
                 .Include(oi => oi.Order)
                 .Where(oi => oi.Order.UserId == userId)
@@ -69,11 +67,14 @@ namespace VirtualLibrary.Pages.MyBooks
             foreach (var product in products)
             {
                 var audiobook = audiobooks.FirstOrDefault(a => a.ProductId == product.Id);
+
                 PurchasedBooks.Add(new PurchasedBookViewModel
                 {
                     Product = product,
                     Audiobook = audiobook,
-                    PurchaseDate = orderDates.ContainsKey(product.Id) ? orderDates[product.Id] : DateTime.MinValue
+                    PurchaseDate = orderDates.TryGetValue(product.Id, out var purchaseDate)
+                        ? purchaseDate
+                        : DateTime.MinValue
                 });
             }
         }
@@ -82,7 +83,6 @@ namespace VirtualLibrary.Pages.MyBooks
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            // Verify the user has purchased this product
             var hasPurchased = await _context.OrderItems
                 .Include(oi => oi.Order)
                 .AnyAsync(oi => oi.Order.UserId == userId && oi.ProductId == productId);
@@ -103,16 +103,17 @@ namespace VirtualLibrary.Pages.MyBooks
                 }
 
                 _logger.LogInformation("User {UserId} generating audiobook for purchased product {ProductId}", userId, productId);
+
                 var audiobook = await _audiobookService.GenerateAudiobookAsync(productId);
 
                 if (audiobook?.Status == AudiobookStatus.Completed)
-                    StatusMessage = $"✓ Audiobook ready for '{product.Title}'! You can now listen or download it.";
+                    StatusMessage = $"✓ Audiobook ready for '{product.Title}'.";
+                else if (audiobook?.Status == AudiobookStatus.Processing)
+                    StatusMessage = $"⏳ Generating audiobook for '{product.Title}'...";
                 else if (audiobook?.Status == AudiobookStatus.Failed)
                     StatusMessage = $"✗ Failed to generate audiobook: {audiobook.ErrorMessage}";
-                else if (audiobook?.Status == AudiobookStatus.Failed)
-                    StatusMessage = $"✗ Rejected: {audiobook.ErrorMessage}";
-                else if (audiobook?.Status == AudiobookStatus.Processing)
-                    StatusMessage = $"⏳ Generating audiobook for '{product.Title}'... This may take a few minutes.";
+                else
+                    StatusMessage = "✗ Audiobook generation failed.";
             }
             catch (Exception ex)
             {
@@ -127,7 +128,6 @@ namespace VirtualLibrary.Pages.MyBooks
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            // Verify ownership
             var audiobook = await _context.Audiobooks
                 .Include(a => a.Product)
                 .FirstOrDefaultAsync(a => a.AudiobookId == audiobookId);
@@ -182,14 +182,29 @@ namespace VirtualLibrary.Pages.MyBooks
             if (!hasPurchased)
                 return Forbid();
 
-            var webRoot = ((IWebHostEnvironment)HttpContext.RequestServices.GetService(typeof(IWebHostEnvironment))!).WebRootPath;
-            var filePath = Path.Combine(webRoot, audiobook.AudioFilePath);
+            var absolutePath = Path.Combine(
+                _env.ContentRootPath,
+                audiobook.AudioFilePath.TrimStart('/', '\\')
+                    .Replace('/', Path.DirectorySeparatorChar)
+                    .Replace('\\', Path.DirectorySeparatorChar));
 
-            if (!System.IO.File.Exists(filePath))
+            if (!System.IO.File.Exists(absolutePath))
                 return NotFound();
 
-            var fileName = $"{audiobook.Product?.Title ?? "audiobook"}.mp3";
-            return PhysicalFile(filePath, "audio/mpeg", fileName);
+            var ext = Path.GetExtension(absolutePath).ToLowerInvariant();
+            var contentType = ext switch
+            {
+                ".mp3" => "audio/mpeg",
+                ".wav" => "audio/wav",
+                _ => "application/octet-stream"
+            };
+
+            var safeTitle = string.IsNullOrWhiteSpace(audiobook.Product?.Title)
+                ? "audiobook"
+                : audiobook.Product.Title;
+
+            var downloadFileName = $"{safeTitle}{ext}";
+            return PhysicalFile(absolutePath, contentType, downloadFileName);
         }
     }
 

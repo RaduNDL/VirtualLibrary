@@ -37,16 +37,7 @@ namespace VirtualLibrary.Pages.Products
                 .FirstOrDefaultAsync(p => p.Id == id)
                 ?? throw new InvalidOperationException("Product not found");
 
-            Categories = new SelectList(
-                await _context.Categories
-                    .AsNoTracking()
-                    .OrderBy(c => c.Name)
-                    .ToListAsync(),
-                nameof(Category.CategoryId), 
-                nameof(Category.Name),
-                Product.CategoryId
-            );
-
+            await LoadCategoriesAsync(Product.CategoryId);
             return Page();
         }
 
@@ -54,27 +45,24 @@ namespace VirtualLibrary.Pages.Products
         {
             if (!ModelState.IsValid)
             {
-                Categories = new SelectList(
-                    await _context.Categories
-                        .AsNoTracking()
-                        .OrderBy(c => c.Name)
-                        .ToListAsync(),
-                    nameof(Category.CategoryId),
-                    nameof(Category.Name),
-                    Product.CategoryId
-                );
+                await LoadCategoriesAsync(Product.CategoryId);
                 return Page();
             }
 
             var dbProduct = await _context.Products.FirstOrDefaultAsync(p => p.Id == Product.Id);
-            if (dbProduct is null) return NotFound();
+            if (dbProduct is null)
+                return NotFound();
 
             dbProduct.Title = Product.Title;
             dbProduct.Author = Product.Author;
             dbProduct.Isbn = Product.Isbn;
             dbProduct.Description = Product.Description;
+            dbProduct.Publisher = Product.Publisher;
+            dbProduct.PublishedYear = Product.PublishedYear;
+            dbProduct.PageCount = Product.PageCount;
+            dbProduct.Language = Product.Language;
+            dbProduct.Rating = Product.Rating;
             dbProduct.Price = Product.Price;
-            dbProduct.Stock = Product.Stock;
             dbProduct.CategoryId = Product.CategoryId;
             dbProduct.UpdatedAtUtc = DateTime.UtcNow;
 
@@ -86,24 +74,14 @@ namespace VirtualLibrary.Pages.Products
                 if (!allowed.Contains(ext))
                 {
                     ModelState.AddModelError(nameof(ImageFile), "Supported format: .jpg, .jpeg, .png, .webp");
-                    Categories = new SelectList(
-                        await _context.Categories.AsNoTracking().OrderBy(c => c.Name).ToListAsync(),
-                        nameof(Category.CategoryId),
-                        nameof(Category.Name),
-                        Product.CategoryId
-                    );
+                    await LoadCategoriesAsync(Product.CategoryId);
                     return Page();
                 }
 
                 if (ImageFile.Length > 5 * 1024 * 1024)
                 {
                     ModelState.AddModelError(nameof(ImageFile), "The file is too large. (max 5MB).");
-                    Categories = new SelectList(
-                        await _context.Categories.AsNoTracking().OrderBy(c => c.Name).ToListAsync(),
-                        nameof(Category.CategoryId),
-                        nameof(Category.Name),
-                        Product.CategoryId
-                    );
+                    await LoadCategoriesAsync(Product.CategoryId);
                     return Page();
                 }
 
@@ -113,7 +91,7 @@ namespace VirtualLibrary.Pages.Products
                 var fileName = $"{Guid.NewGuid():N}{ext}";
                 var fullPath = Path.Combine(uploadsRoot, fileName);
 
-                using (var stream = System.IO.File.Create(fullPath))
+                await using (var stream = System.IO.File.Create(fullPath))
                 {
                     await ImageFile.CopyToAsync(stream);
                 }
@@ -130,6 +108,19 @@ namespace VirtualLibrary.Pages.Products
 
             await _context.SaveChangesAsync();
             return RedirectToPage("./Index");
+        }
+
+        private async Task LoadCategoriesAsync(int? selectedCategoryId = null)
+        {
+            Categories = new SelectList(
+                await _context.Categories
+                    .AsNoTracking()
+                    .OrderBy(c => c.Name)
+                    .ToListAsync(),
+                nameof(Category.CategoryId),
+                nameof(Category.Name),
+                selectedCategoryId
+            );
         }
     }
 }

@@ -6,36 +6,44 @@
 }
 
 <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
-<link rel="stylesheet" href="~/css/Library.css">
+<link rel="stylesheet" href="~/css/Library.css" asp-append-version="true" />
 
 <div class="library-wrapper">
     <div class="library-container">
+
         <div class="library-header">
-            <div class="header-titles">
+            <div class="header-left">
                 <h2>Available Books</h2>
+
                 @if (Model.Products != null && Model.Products.Any())
                 {
                     <span class="badge-count">@Model.Products.Count() book(s) found</span>
                 }
             </div>
 
-            <form method="get" class="search-form">
-                <div class="search-bar">
-                    <i class='bx bx-search'></i>
-                    <input type="text" name="q" value="@Model.q" placeholder="Search by title..." />
-                    <button type="submit">Search</button>
-                </div>
-            </form>
+            <div class="header-right">
+                <form method="get" class="search-form">
+                    <div class="search-bar">
+                        <i class='bx bx-search'></i>
+                        <input type="text"
+                               name="q"
+                               value="@Model.q"
+                               placeholder="Search by title..." />
+                        <button type="submit">Search</button>
+                    </div>
+                </form>
+            </div>
         </div>
 
         @if (Model.Products == null || !Model.Products.Any())
         {
             <div class="empty-state">
                 <i class='bx bx-search-alt-2'></i>
+
                 @if (!string.IsNullOrWhiteSpace(Model.q))
                 {
                     <h3>No books match "@Model.q"</h3>
-                    <a href="@Url.Page("/Library/Index")" class="btn-primary mt-3">Clear search</a>
+                    <a href="@Url.Page("/Library/Index")" class="btn-primary">Clear search</a>
                 }
                 else
                 {
@@ -49,48 +57,74 @@
                 @foreach (var product in Model.Products)
                 {
                     var shortDesc = product.Description;
+
                     if (!string.IsNullOrWhiteSpace(shortDesc) && shortDesc.Length > 120)
                     {
                         shortDesc = shortDesc.Substring(0, 120) + "...";
                     }
 
-                    var isFavorite = Model.FavoriteProductIds != null && Model.FavoriteProductIds.Contains(product.Id);
+                    var isFavorite = Model.FavoriteProductIds != null &&
+                    Model.FavoriteProductIds.Contains(product.Id);
 
                     <div class="book-card">
                         <div class="book-cover-wrapper">
-                            <img class="book-cover" src="~/@product.ImagePath" alt="@product.Title" asp-append-version="true" onerror="this.src='/images/no-cover.svg';this.onerror=null;" />
-                            <div class="book-price-badge">@product.Price.ToString("0.00") RON</div>
+                            <img class="book-cover"
+                                 src="~/@product.ImagePath"
+                                 alt="@product.Title"
+                                 asp-append-version="true"
+                                 onerror="this.src='/images/no-cover.svg';this.onerror=null;" />
+
+                            <div class="book-price-badge">
+                                @product.Price.ToString("0.00") RON
+                            </div>
                         </div>
 
                         <div class="book-info">
                             <span class="book-category">@product.Category?.Name</span>
+
                             <h3 class="book-title">@product.Title</h3>
+
                             @if (!string.IsNullOrWhiteSpace(product.Author))
                             {
                                 <p class="book-author">by @product.Author</p>
                             }
+
                             <p class="book-desc">@shortDesc</p>
+
                             <div class="book-meta">
-                                <span><i class='bx bx-store'></i> @product.Supplier?.Name</span>
-                                <span><i class='bx bx-box'></i> Stock: @product.Stock</span>
+                                <span>
+                                    <i class='bx bx-store'></i>
+                                    @product.Supplier?.Name
+                                </span>
+
+                                
                             </div>
                         </div>
 
                         <div class="book-actions">
-                            <a asp-page="/Products/Details" asp-route-id="@product.Id" class="btn-details">
+                            <a asp-page="/Products/Details"
+                               asp-route-id="@product.Id"
+                               class="btn-details">
                                 Details
                             </a>
 
                             <div class="action-icons">
-                                <form method="post" asp-page="/Favorites/Index" asp-page-handler="Add">
+                                <form method="post"
+                                      asp-page="/Favorites/Index"
+                                      asp-page-handler="Add">
                                     <input type="hidden" name="productId" value="@product.Id" />
-                                    <button type="submit" class="icon-btn @(isFavorite ? "active-heart" : "")">
+
+                                    <button type="submit"
+                                            class="icon-btn @(isFavorite ? "active-heart" : "")">
                                         <i class='bx @(isFavorite ? "bxs-heart" : "bx-heart")'></i>
                                     </button>
                                 </form>
 
-                                <form method="post" asp-page="/Cart/Index" asp-page-handler="Add">
+                                <form method="post"
+                                      asp-page="/Cart/Index"
+                                      asp-page-handler="Add">
                                     <input type="hidden" name="productId" value="@product.Id" />
+
                                     <button type="submit" class="icon-btn cart-btn">
                                         <i class='bx bx-cart-add'></i>
                                     </button>
@@ -101,5 +135,6 @@
                 }
             </div>
         }
+
     </div>
 </div>

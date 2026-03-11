@@ -69,7 +69,7 @@ namespace VirtualLibrary.Pages.Products
                 var fileName = $"{Guid.NewGuid():N}{ext}";
                 var fullPath = Path.Combine(uploadsRoot, fileName);
 
-                using (var stream = System.IO.File.Create(fullPath))
+                await using (var stream = System.IO.File.Create(fullPath))
                 {
                     await ImageFile.CopyToAsync(stream);
                 }
@@ -77,14 +77,13 @@ namespace VirtualLibrary.Pages.Products
                 Product.ImagePath = Path.Combine("uploads", "books", fileName).Replace('\\', '/');
             }
 
+            Product.CreatedAtUtc = DateTime.UtcNow;
+            Product.UpdatedAtUtc = DateTime.UtcNow;
+
             _context.Products.Add(Product);
             await _context.SaveChangesAsync();
-            return RedirectToPage("./Index");
-        }
 
-        private async Task LoadLookupsAsync(int categoryId, object supplierId)
-        {
-            throw new NotImplementedException();
+            return RedirectToPage("./Index");
         }
 
         private async Task LoadLookupsAsync(int? selectedCategoryId = null, int? selectedSupplierId = null)

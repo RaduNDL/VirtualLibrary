@@ -8,37 +8,79 @@ using VirtualLibrary.Services;
 
 namespace VirtualLibrary.Pages.Products
 {
-    [Authorize]
+    [Authorize(Roles = "Administrator")]
     public class ManagePdfModel : PageModel
     {
         private readonly AppDbContext _context;
         private readonly PdfService _pdfService;
+        private readonly BookPdfGenerator _bookPdfGenerator;
         private readonly ILogger<ManagePdfModel> _logger;
 
         public ManagePdfModel(
             AppDbContext context,
             PdfService pdfService,
+            BookPdfGenerator bookPdfGenerator,
             ILogger<ManagePdfModel> logger)
         {
             _context = context;
             _pdfService = pdfService;
+            _bookPdfGenerator = bookPdfGenerator;
             _logger = logger;
         }
 
         [BindProperty]
         public int ProductId { get; set; }
 
-        public Product? Product { get; set; }
+        public Product? Product { get; private set; }
 
         [TempData]
         public string? StatusMessage { get; set; }
 
+        public bool HasBookPdf => Product != null && !string.IsNullOrWhiteSpace(Product.PdfFilePath);
+        public bool HasDescriptionPdf => Product != null && !string.IsNullOrWhiteSpace(Product.DescriptionPdfPath);
+
         public async Task<IActionResult> OnGetAsync(int id)
         {
-            Product = await _context.Products.FirstOrDefaultAsync(p => p.Id == id);
-            if (Product == null) return NotFound();
+            Product = await LoadProductAsync(id);
+            if (Product == null)
+                return NotFound();
+
             ProductId = id;
             return Page();
+        }
+
+        public async Task<IActionResult> OnPostGenerateDescriptionAsync(int productId)
+        {
+            try
+            {
+                var product = await LoadProductAsync(productId);
+                if (product == null)
+                    return NotFound();
+
+                if (!string.IsNullOrWhiteSpace(product.DescriptionPdfPath))
+                    await _pdfService.DeletePdfAsync(product.DescriptionPdfPath);
+
+                var generatedPath = await _bookPdfGenerator.GenerateBookDescriptionPdfAsync(product);
+                if (string.IsNullOrWhiteSpace(generatedPath))
+                {
+                    StatusMessage = "Failed to generate the details PDF.";
+                    return RedirectToPage(new { id = productId });
+                }
+
+                product.DescriptionPdfPath = generatedPath;
+                product.UpdatedAtUtc = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync();
+                StatusMessage = "Details PDF generated successfully.";
+
+                return RedirectToPage(new { id = productId });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error generating details PDF for product {ProductId}", productId);
+                StatusMessage = $"Error: {ex.Message}";
+                return RedirectToPage(new { id = productId });
+            }
         }
 
         public async Task<IActionResult> OnPostSearchOpenLibraryAsync(int productId)
@@ -46,30 +88,36 @@ namespace VirtualLibrary.Pages.Products
             try
             {
                 var product = await _context.Products.FirstOrDefaultAsync(p => p.Id == productId);
-                if (product == null) return NotFound();
+                if (product == null)
+                    return NotFound();
 
                 var pdfUrl = await _pdfService.SearchOpenLibraryPdfAsync(
-                    product.Isbn, product.Title, product.Author ?? "");
+                    product.Isbn,
+                    product.Title,
+                    product.Author ?? string.Empty);
 
-                if (string.IsNullOrEmpty(pdfUrl))
+                if (string.IsNullOrWhiteSpace(pdfUrl))
                 {
-                    StatusMessage = "No PDF found in Open Library for this book.";
+                    StatusMessage = "No public book PDF was found on Open Library for this title.";
+                    return RedirectToPage(new { id = productId });
                 }
-                else
+
+                if (!string.IsNullOrWhiteSpace(product.PdfFilePath))
+                    await _pdfService.DeletePdfAsync(product.PdfFilePath);
+
+                var savedPath = await _pdfService.DownloadAndSavePdfAsync(productId, pdfUrl, "OpenLibrary");
+                if (string.IsNullOrWhiteSpace(savedPath))
                 {
-                    var savedPath = await _pdfService.DownloadAndSavePdfAsync(productId, pdfUrl, "OpenLibrary");
-                    if (!string.IsNullOrEmpty(savedPath))
-                    {
-                        product.PdfFilePath = savedPath;
-                        product.PdfSource = "OpenLibrary";
-                        await _context.SaveChangesAsync();
-                        StatusMessage = "PDF found and downloaded successfully from Open Library!";
-                    }
-                    else
-                    {
-                        StatusMessage = "PDF found but failed to download.";
-                    }
+                    StatusMessage = "A PDF was found, but the file could not be downloaded or validated.";
+                    return RedirectToPage(new { id = productId });
                 }
+
+                product.PdfFilePath = savedPath;
+                product.PdfSource = "OpenLibrary";
+                product.UpdatedAtUtc = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync();
+                StatusMessage = "Book PDF downloaded successfully from Open Library.";
             }
             catch (Exception ex)
             {
@@ -85,7 +133,8 @@ namespace VirtualLibrary.Pages.Products
             try
             {
                 var product = await _context.Products.FirstOrDefaultAsync(p => p.Id == productId);
-                if (product == null) return NotFound();
+                if (product == null)
+                    return NotFound();
 
                 if (pdfFile == null)
                 {
@@ -93,18 +142,22 @@ namespace VirtualLibrary.Pages.Products
                     return RedirectToPage(new { id = productId });
                 }
 
+                if (!string.IsNullOrWhiteSpace(product.PdfFilePath))
+                    await _pdfService.DeletePdfAsync(product.PdfFilePath);
+
                 var savedPath = await _pdfService.UploadPdfAsync(productId, pdfFile);
-                if (string.IsNullOrEmpty(savedPath))
+                if (string.IsNullOrWhiteSpace(savedPath))
                 {
-                    StatusMessage = "Failed to upload PDF. Make sure it is a valid PDF file (max 100 MB).";
+                    StatusMessage = "Upload failed. Make sure the file is a real PDF and is under 100 MB.";
+                    return RedirectToPage(new { id = productId });
                 }
-                else
-                {
-                    product.PdfFilePath = savedPath;
-                    product.PdfSource = "Manual";
-                    await _context.SaveChangesAsync();
-                    StatusMessage = "PDF uploaded successfully!";
-                }
+
+                product.PdfFilePath = savedPath;
+                product.PdfSource = "Manual";
+                product.UpdatedAtUtc = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync();
+                StatusMessage = "Book PDF uploaded successfully.";
             }
             catch (Exception ex)
             {
@@ -120,26 +173,31 @@ namespace VirtualLibrary.Pages.Products
             try
             {
                 var product = await _context.Products.FirstOrDefaultAsync(p => p.Id == productId);
-                if (product == null) return NotFound();
+                if (product == null)
+                    return NotFound();
 
-                if (string.IsNullOrWhiteSpace(pdfUrl))
+                if (string.IsNullOrWhiteSpace(pdfUrl) || !Uri.TryCreate(pdfUrl, UriKind.Absolute, out _))
                 {
-                    StatusMessage = "Please enter a valid PDF URL.";
+                    StatusMessage = "Please enter a valid absolute PDF URL.";
                     return RedirectToPage(new { id = productId });
                 }
 
-                var savedPath = await _pdfService.DownloadAndSavePdfAsync(productId, pdfUrl, "URL");
-                if (string.IsNullOrEmpty(savedPath))
+                if (!string.IsNullOrWhiteSpace(product.PdfFilePath))
+                    await _pdfService.DeletePdfAsync(product.PdfFilePath);
+
+                var savedPath = await _pdfService.DownloadAndSavePdfAsync(productId, pdfUrl.Trim(), "URL");
+                if (string.IsNullOrWhiteSpace(savedPath))
                 {
-                    StatusMessage = "Failed to download PDF. Make sure the URL points directly to a .pdf file.";
+                    StatusMessage = "Failed to download a valid PDF from the provided URL.";
+                    return RedirectToPage(new { id = productId });
                 }
-                else
-                {
-                    product.PdfFilePath = savedPath;
-                    product.PdfSource = "URL";
-                    await _context.SaveChangesAsync();
-                    StatusMessage = "PDF downloaded and saved successfully!";
-                }
+
+                product.PdfFilePath = savedPath;
+                product.PdfSource = "URL";
+                product.UpdatedAtUtc = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync();
+                StatusMessage = "Book PDF downloaded and saved successfully.";
             }
             catch (Exception ex)
             {
@@ -155,20 +213,20 @@ namespace VirtualLibrary.Pages.Products
             try
             {
                 var product = await _context.Products.FirstOrDefaultAsync(p => p.Id == productId);
-                if (product == null) return NotFound();
+                if (product == null)
+                    return NotFound();
 
-                var success = await _pdfService.DeletePdfAsync(productId);
-                if (success)
-                {
-                    product.PdfFilePath = null;
-                    product.PdfSource = null;
-                    await _context.SaveChangesAsync();
-                    StatusMessage = "PDF deleted successfully.";
-                }
-                else
-                {
-                    StatusMessage = "Failed to delete PDF.";
-                }
+                var deleted = false;
+
+                if (!string.IsNullOrWhiteSpace(product.PdfFilePath))
+                    deleted = await _pdfService.DeletePdfAsync(product.PdfFilePath);
+
+                product.PdfFilePath = null;
+                product.PdfSource = null;
+                product.UpdatedAtUtc = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync();
+                StatusMessage = deleted ? "Book PDF deleted successfully." : "Book PDF record cleared.";
             }
             catch (Exception ex)
             {
@@ -177,6 +235,14 @@ namespace VirtualLibrary.Pages.Products
             }
 
             return RedirectToPage(new { id = productId });
+        }
+
+        private Task<Product?> LoadProductAsync(int id)
+        {
+            return _context.Products
+                .Include(p => p.Category)
+                .Include(p => p.Supplier)
+                .FirstOrDefaultAsync(p => p.Id == id);
         }
     }
 }

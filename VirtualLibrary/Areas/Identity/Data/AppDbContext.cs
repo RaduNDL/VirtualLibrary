@@ -50,6 +50,9 @@ namespace VirtualLibrary.Data
 
                 entity.Property(p => p.Price)
                     .HasPrecision(18, 2);
+
+                entity.Property(p => p.Rating)
+                    .HasPrecision(3, 2);
             });
 
             builder.Entity<Order>(entity =>

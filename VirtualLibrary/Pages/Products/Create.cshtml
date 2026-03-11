@@ -27,6 +27,7 @@
                             <span asp-validation-for="Product.Title" class="text-error"></span>
                         </div>
                     </div>
+
                     <div class="col-md-6">
                         <div class="input-group-modern">
                             <label asp-for="Product.Author"></label>
@@ -42,6 +43,7 @@
                             <span asp-validation-for="Product.Isbn" class="text-error"></span>
                         </div>
                     </div>
+
                     <div class="col-md-4">
                         <div class="input-group-modern">
                             <label asp-for="Product.Price"></label>
@@ -49,11 +51,45 @@
                             <span asp-validation-for="Product.Price" class="text-error"></span>
                         </div>
                     </div>
-                    <div class="col-md-4">
+
+                    
+                    <div class="col-md-6">
                         <div class="input-group-modern">
-                            <label asp-for="Product.Stock"></label>
-                            <input asp-for="Product.Stock" placeholder="0" />
-                            <span asp-validation-for="Product.Stock" class="text-error"></span>
+                            <label asp-for="Product.Publisher"></label>
+                            <input asp-for="Product.Publisher" placeholder="Publisher" />
+                            <span asp-validation-for="Product.Publisher" class="text-error"></span>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3">
+                        <div class="input-group-modern">
+                            <label asp-for="Product.PublishedYear"></label>
+                            <input asp-for="Product.PublishedYear" type="number" placeholder="2024" />
+                            <span asp-validation-for="Product.PublishedYear" class="text-error"></span>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3">
+                        <div class="input-group-modern">
+                            <label asp-for="Product.PageCount"></label>
+                            <input asp-for="Product.PageCount" type="number" placeholder="350" />
+                            <span asp-validation-for="Product.PageCount" class="text-error"></span>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="input-group-modern">
+                            <label asp-for="Product.Language"></label>
+                            <input asp-for="Product.Language" placeholder="en / ro" />
+                            <span asp-validation-for="Product.Language" class="text-error"></span>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="input-group-modern">
+                            <label asp-for="Product.Rating"></label>
+                            <input asp-for="Product.Rating" type="number" step="0.1" min="0" max="5" placeholder="4.5" />
+                            <span asp-validation-for="Product.Rating" class="text-error"></span>
                         </div>
                     </div>
 
@@ -63,14 +99,17 @@
                             <select asp-for="Product.CategoryId" asp-items="Model.Categories">
                                 <option value="">— None —</option>
                             </select>
+                            <span asp-validation-for="Product.CategoryId" class="text-error"></span>
                         </div>
                     </div>
+
                     <div class="col-md-6">
                         <div class="input-group-modern">
                             <label asp-for="Product.SupplierId">Supplier</label>
                             <select asp-for="Product.SupplierId" asp-items="Model.Suppliers">
                                 <option value="">— None —</option>
                             </select>
+                            <span asp-validation-for="Product.SupplierId" class="text-error"></span>
                         </div>
                     </div>
 

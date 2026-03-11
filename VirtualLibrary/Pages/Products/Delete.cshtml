@@ -1,80 +1,105 @@
 ﻿@page "{id:int}"
-@model VirtualLibrary.Pages.Products.DetailsModel
+@model VirtualLibrary.Pages.Products.DeleteModel
 @{
-    ViewData["Title"] = Model.Product.Title;
+    ViewData["Title"] = "Delete Book";
+    Layout = "~/Pages/Shared/_Layout.cshtml";
 }
 
 <div class="container mt-4">
-    <div class="row">
-        <div class="col-md-4">
-            @if (!string.IsNullOrEmpty(Model.Product.ImagePath))
-            {
-                <img src="@Model.Product.ImagePath" class="img-fluid rounded shadow" alt="@Model.Product.Title">
-            }
-            else
-            {
-                <div class="bg-light d-flex align-items-center justify-content-center rounded shadow" style="height: 400px;">
-                    <i class='bx bx-book-content' style="font-size: 5rem; color: #ccc;"></i>
-                </div>
-            }
+
+    <h2 class="text-danger mb-4">
+        Delete Book
+    </h2>
+
+    <div class="card shadow-sm">
+
+        <div class="card-body">
+
+            <h4 class="text-danger">
+                Are you sure you want to delete this book?
+            </h4>
+
+            <hr />
+
+            <dl class="row">
+
+                <dt class="col-sm-3">
+                    Title
+                </dt>
+
+                <dd class="col-sm-9">
+                    @Model.Product.Title
+                </dd>
+
+
+                <dt class="col-sm-3">
+                    Author
+                </dt>
+
+                <dd class="col-sm-9">
+                    @Model.Product.Author
+                </dd>
+
+
+                <dt class="col-sm-3">
+                    ISBN
+                </dt>
+
+                <dd class="col-sm-9">
+                    @Model.Product.Isbn
+                </dd>
+
+
+                <dt class="col-sm-3">
+                    Publisher
+                </dt>
+
+                <dd class="col-sm-9">
+                    @Model.Product.Publisher
+                </dd>
+
+
+                <dt class="col-sm-3">
+                    Category
+                </dt>
+
+                <dd class="col-sm-9">
+                    @Model.Product.Category?.Name
+                </dd>
+
+
+                <dt class="col-sm-3">
+                    Price
+                </dt>
+
+                <dd class="col-sm-9">
+                    @Model.Product.Price.ToString("0.00") RON
+                </dd>
+
+            </dl>
+
+            <form method="post">
+
+                <input type="hidden" asp-for="Product.Id" />
+
+                <button type="submit"
+                        class="btn btn-danger">
+
+                    Delete
+
+                </button>
+
+                <a asp-page="./Index"
+                   class="btn btn-secondary">
+
+                    Cancel
+
+                </a>
+
+            </form>
+
         </div>
-        <div class="col-md-8">
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a asp-page="/Index">Home</a></li>
-                    <li class="breadcrumb-item active">@Model.Product.Category?.Name</li>
-                </ol>
-            </nav>
 
-            <h1 class="display-5 fw-bold">@Model.Product.Title</h1>
-            <h4 class="text-muted mb-4">Author: @Model.Product.Author</h4>
-
-            <div class="card mb-4 border-0 bg-light">
-                <div class="card-body">
-                    <h5 class="card-title fw-bold">Description</h5>
-                    <p class="card-text">@Model.Product.Description</p>
-                </div>
-            </div>
-
-            <div class="d-flex align-items-center gap-3 mb-4">
-                <h2 class="text-primary mb-0">@Model.Product.Price.ToString("C")</h2>
-                @if (Model.Product.Stock > 0)
-                {
-                    <span class="badge bg-success">In Stock (@Model.Product.Stock)</span>
-                }
-                else
-                {
-                    <span class="badge bg-danger">Out of Stock</span>
-                }
-            </div>
-
-            <div class="d-flex gap-2">
-                <form method="post" asp-page="/Cart/Index" asp-page-handler="AddToCart">
-                    <input type="hidden" name="id" value="@Model.Product.Id" />
-                    <button type="submit" class="btn btn-primary btn-lg px-5 shadow-sm @(Model.Product.Stock <= 0 ? "disabled" : "")">
-                        <i class='bx bxs-cart-add'></i> Add to Cart
-                    </button>
-                </form>
-
-                @if (Model.Product.HasPdfAvailable)
-                {
-                    <a asp-page="./ReadPdf" asp-route-id="@Model.Product.Id" class="btn btn-dark btn-lg px-5 shadow-sm">
-                        <i class='bx bxs-book-open'></i> Start Reading
-                    </a>
-                }
-            </div>
-
-            @if (User.IsInRole("Administrator"))
-            {
-                <div class="mt-5 pt-3 border-top">
-                    <p class="text-danger small fw-bold text-uppercase">Admin Controls</p>
-                    <div class="btn-group">
-                        <a asp-page="./Edit" asp-route-id="@Model.Product.Id" class="btn btn-outline-secondary">Edit Product</a>
-                        <a asp-page="./ManagePdf" asp-route-id="@Model.Product.Id" class="btn btn-outline-secondary">Manage PDF/Media</a>
-                        <a asp-page="./Delete" asp-route-id="@Model.Product.Id" class="btn btn-outline-danger">Delete</a>
-                    </div>
-                </div>
-            }
-        </div>
     </div>
+
 </div>

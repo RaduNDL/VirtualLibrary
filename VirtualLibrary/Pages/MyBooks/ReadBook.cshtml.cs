@@ -14,25 +14,26 @@ namespace VirtualLibrary.Pages.MyBooks
     {
         private readonly AppDbContext _context;
         private readonly AudiobookService _audiobookService;
-        private readonly AudiobookQueue _queue;
         private readonly IWebHostEnvironment _env;
 
         public ReadBookModel(
             AppDbContext context,
             AudiobookService audiobookService,
-            AudiobookQueue queue,
             IWebHostEnvironment env)
         {
             _context = context;
             _audiobookService = audiobookService;
-            _queue = queue;
             _env = env;
         }
 
-        public Product Product { get; set; } = null!;
-        public Audiobook? Audiobook { get; set; }
-        public bool HasPurchased { get; set; }
-        public string? AudioSourceUrl { get; set; }
+        public Product Product { get; private set; } = null!;
+        public Audiobook? Audiobook { get; private set; }
+        public bool HasPurchased { get; private set; }
+        public string? AudioSourceUrl { get; private set; }
+        public string? PdfUrl { get; private set; }
+
+        [TempData]
+        public string? StatusMessage { get; set; }
 
         public async Task<IActionResult> OnGetAsync(int id)
         {
@@ -45,79 +46,128 @@ namespace VirtualLibrary.Pages.MyBooks
             if (!HasPurchased)
                 return RedirectToPage("/Library/Index");
 
-            Product = await _context.Products
+            var product = await _context.Products
                 .AsNoTracking()
-                .FirstAsync(p => p.Id == id);
+                .Include(p => p.Category)
+                .Include(p => p.Supplier)
+                .FirstOrDefaultAsync(p => p.Id == id);
+
+            if (product == null)
+                return NotFound();
+
+            Product = product;
 
             Audiobook = await _context.Audiobooks
                 .AsNoTracking()
                 .FirstOrDefaultAsync(a => a.ProductId == id);
 
-            if (Audiobook?.IsCompleted == true)
-                AudioSourceUrl = Url.Page("/MyBooks/ReadBook", "Audio", new { id = id });
+            if (Audiobook?.Status == AudiobookStatus.Completed && !string.IsNullOrWhiteSpace(Audiobook.AudioFilePath))
+                AudioSourceUrl = Url.Page("/MyBooks/ReadBook", "Audio", new { id });
+
+            if (!string.IsNullOrWhiteSpace(Product.PdfFilePath))
+                PdfUrl = Url.Content($"~/{Product.PdfFilePath}");
 
             return Page();
         }
 
         public async Task<IActionResult> OnPostGenerateAudioAsync(int id)
         {
-            var audiobook = await _audiobookService.StartGenerationAsync(id);
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            if (audiobook == null)
-                return new JsonResult(new { error = "Book not found" });
+            var hasPurchased = await _context.OrderItems
+                .Include(o => o.Order)
+                .AnyAsync(o => o.Order.UserId == userId && o.ProductId == id);
 
-            if (audiobook.IsCompleted)
+            if (!hasPurchased)
             {
-                return new JsonResult(new
-                {
-                    status = "Completed",
-                    audioUrl = Url.Page("/MyBooks/ReadBook", "Audio", new { id = id })
-                });
+                StatusMessage = "✗ You must purchase this book before generating an audiobook.";
+                return RedirectToPage(new { id });
             }
 
-            await _queue.EnqueueAsync(id);
-
-            return new JsonResult(new
+            try
             {
-                status = "Processing"
-            });
-        }
+                var product = await _context.Products.FirstOrDefaultAsync(p => p.Id == id);
+                if (product == null)
+                {
+                    StatusMessage = "✗ Product not found.";
+                    return RedirectToPage(new { id });
+                }
 
-        public async Task<IActionResult> OnGetCheckStatusAsync(int id)
-        {
-            var audiobook = await _context.Audiobooks
-                .AsNoTracking()
-                .FirstOrDefaultAsync(a => a.ProductId == id);
+                var audiobook = await _audiobookService.GenerateAudiobookAsync(id);
 
-            if (audiobook == null)
-                return new JsonResult(new { status = "NotFound" });
-
-            return new JsonResult(new
+                if (audiobook == null)
+                {
+                    StatusMessage = "✗ Audiobook generation failed.";
+                }
+                else if (audiobook.Status == AudiobookStatus.Completed)
+                {
+                    StatusMessage = "✓ Audiobook generated successfully.";
+                }
+                else if (audiobook.Status == AudiobookStatus.Processing)
+                {
+                    StatusMessage = "⏳ Audiobook is being generated.";
+                }
+                else if (audiobook.Status == AudiobookStatus.Failed)
+                {
+                    StatusMessage = $"✗ Generation failed: {audiobook.ErrorMessage}";
+                }
+            }
+            catch (Exception ex)
             {
-                status = audiobook.Status.ToString(),
-                audioUrl = audiobook.IsCompleted
-                    ? Url.Page("/MyBooks/ReadBook", "Audio", new { id = id })
-                    : null
-            });
+                StatusMessage = $"✗ Error: {ex.Message}";
+            }
+
+            return RedirectToPage(new { id });
         }
 
         public async Task<IActionResult> OnGetAudioAsync(int id)
         {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            var hasPurchased = await _context.OrderItems
+                .Include(o => o.Order)
+                .AnyAsync(o => o.Order.UserId == userId && o.ProductId == id);
+
+            if (!hasPurchased && !User.IsInRole("Administrator"))
+                return Forbid();
+
             var audiobook = await _context.Audiobooks
                 .AsNoTracking()
                 .FirstOrDefaultAsync(a => a.ProductId == id);
 
-            if (audiobook == null || !audiobook.IsCompleted)
+            if (audiobook == null ||
+                audiobook.Status != AudiobookStatus.Completed ||
+                string.IsNullOrWhiteSpace(audiobook.AudioFilePath))
+            {
+                return NotFound();
+            }
+
+            var absolutePath = Path.Combine(
+                _env.ContentRootPath,
+                audiobook.AudioFilePath.TrimStart('/', '\\')
+                    .Replace('/', Path.DirectorySeparatorChar)
+                    .Replace('\\', Path.DirectorySeparatorChar));
+
+            if (!System.IO.File.Exists(absolutePath))
                 return NotFound();
 
-            var path = Path.Combine(_env.ContentRootPath, audiobook.AudioFilePath!);
+            var contentType = GetAudioContentType(absolutePath);
 
-            if (!System.IO.File.Exists(path))
-                return NotFound();
-
-            return new PhysicalFileResult(path, "audio/wav")
+            return new PhysicalFileResult(absolutePath, contentType)
             {
                 EnableRangeProcessing = true
+            };
+        }
+
+        private static string GetAudioContentType(string filePath)
+        {
+            var ext = Path.GetExtension(filePath).ToLowerInvariant();
+
+            return ext switch
+            {
+                ".mp3" => "audio/mpeg",
+                ".wav" => "audio/wav",
+                _ => "application/octet-stream"
             };
         }
     }

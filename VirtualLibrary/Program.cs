@@ -25,6 +25,11 @@ builder.Services
     {
         options.SignIn.RequireConfirmedAccount = false;
         options.User.RequireUniqueEmail = true;
+        options.Password.RequireDigit = true;
+        options.Password.RequireLowercase = true;
+        options.Password.RequireUppercase = true;
+        options.Password.RequireNonAlphanumeric = false;
+        options.Password.RequiredLength = 6;
     })
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<AppDbContext>();
@@ -38,21 +43,22 @@ builder.Services.ConfigureApplicationCookie(options =>
 
 builder.Services.Configure<FormOptions>(options =>
 {
-    options.MultipartBodyLengthLimit = 104857600;
+    options.MultipartBodyLengthLimit = 104_857_600; 
 });
 
 builder.WebHost.ConfigureKestrel(options =>
 {
-    options.Limits.MaxRequestBodySize = 104857600;
+    options.Limits.MaxRequestBodySize = 104_857_600; 
 });
 
 builder.Services.AddRazorPages()
 #if DEBUG
-.AddMvcOptions(o => o.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true)
+    .AddMvcOptions(o => o.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true)
 #endif
-;
+    ;
 
 builder.Services.AddControllers();
+
 
 builder.Services.AddHttpClient("PdfClient")
     .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
@@ -64,7 +70,10 @@ builder.Services.AddHttpClient("PdfClient")
             System.Net.DecompressionMethods.Deflate
     });
 
+
 builder.Services.AddScoped<PdfService>();
+builder.Services.AddScoped<BookMetadataEnricher>();
+builder.Services.AddScoped<BookPdfGenerator>();
 builder.Services.AddScoped<BookImporter>();
 builder.Services.AddScoped<AudiobookService>();
 
@@ -73,10 +82,24 @@ builder.Services.AddHostedService<AudiobookWorker>();
 
 var app = builder.Build();
 
+
+var webRoot = app.Environment.WebRootPath;
+var contentRoot = app.Environment.ContentRootPath;
+
+Directory.CreateDirectory(Path.Combine(webRoot, "audiobooks"));
+Directory.CreateDirectory(Path.Combine(webRoot, "pdfs"));
+Directory.CreateDirectory(Path.Combine(webRoot, "pdfs", "books"));
+Directory.CreateDirectory(Path.Combine(webRoot, "pdfs", "descriptions"));
+Directory.CreateDirectory(Path.Combine(webRoot, "uploads"));
+Directory.CreateDirectory(Path.Combine(webRoot, "uploads", "books"));
+Directory.CreateDirectory(Path.Combine(webRoot, "uploads", "pdfs"));
+Directory.CreateDirectory(Path.Combine(contentRoot, "GeneratedAudio"));
+
+
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
-    var logger = services.GetRequiredService<ILoggerFactory>().CreateLogger("Startup");
+    var startupLogger = services.GetRequiredService<ILoggerFactory>().CreateLogger("Startup");
 
     try
     {
@@ -92,7 +115,15 @@ using (var scope = app.Services.CreateScope())
         {
             if (!await roleManager.RoleExistsAsync(role))
             {
-                await roleManager.CreateAsync(new IdentityRole(role));
+                var roleResult = await roleManager.CreateAsync(new IdentityRole(role));
+
+                if (!roleResult.Succeeded)
+                {
+                    startupLogger.LogWarning(
+                        "Failed creating role {Role}: {Errors}",
+                        role,
+                        string.Join(", ", roleResult.Errors.Select(e => e.Description)));
+                }
             }
         }
 
@@ -115,38 +146,43 @@ using (var scope = app.Services.CreateScope())
             if (result.Succeeded)
             {
                 await userManager.AddToRoleAsync(user, "Administrator");
-                logger.LogInformation("Admin user created.");
+                startupLogger.LogInformation("Admin user created successfully.");
             }
             else
             {
-                logger.LogWarning("Admin creation failed: {Errors}",
+                startupLogger.LogWarning(
+                    "Admin creation failed: {Errors}",
                     string.Join(", ", result.Errors.Select(e => e.Description)));
+            }
+        }
+        else
+        {
+            if (!await userManager.IsInRoleAsync(admin, "Administrator"))
+            {
+                await userManager.AddToRoleAsync(admin, "Administrator");
+                startupLogger.LogInformation("Existing admin user added to Administrator role.");
             }
         }
     }
     catch (Exception ex)
     {
-        logger.LogError(ex, "Database initialization error.");
+        startupLogger.LogError(ex, "Database initialization error.");
     }
 }
 
-if (!app.Environment.IsDevelopment())
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseMigrationsEndPoint();
+}
+else
 {
     app.UseExceptionHandler("/Error");
     app.UseHsts();
 }
 
 app.UseHttpsRedirection();
-
 app.UseStaticFiles();
-
-var audioDir = Path.Combine(app.Environment.WebRootPath, "audiobooks");
-var pdfDir = Path.Combine(app.Environment.WebRootPath, "pdfs");
-var uploadDir = Path.Combine(app.Environment.WebRootPath, "uploads", "books");
-
-Directory.CreateDirectory(audioDir);
-Directory.CreateDirectory(pdfDir);
-Directory.CreateDirectory(uploadDir);
 
 app.UseRouting();
 

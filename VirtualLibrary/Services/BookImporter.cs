@@ -109,7 +109,7 @@ namespace VirtualLibrary.Services
                     {
                         try
                         {
-                           
+
                             var title = book.TryGetProperty("title", out var tProp) ? tProp.GetString() : null;
                             if (string.IsNullOrWhiteSpace(title)) continue;
 
@@ -161,7 +161,7 @@ namespace VirtualLibrary.Services
                                 try
                                 {
                                     var bytes = await client.GetByteArrayAsync(coverUrl);
-                                    if (bytes.Length > 500) 
+                                    if (bytes.Length > 500)
                                     {
                                         var uploadsRoot = Path.Combine(_env.WebRootPath, "uploads", "books");
                                         Directory.CreateDirectory(uploadsRoot);
@@ -179,7 +179,7 @@ namespace VirtualLibrary.Services
                             string? pdfSource = null;
                             if (book.TryGetProperty("ia", out var iaArr) && iaArr.GetArrayLength() > 0)
                             {
-                                pdfSource = "Pending"; 
+                                pdfSource = "Pending";
                             }
 
                             var product = new Product
@@ -189,7 +189,6 @@ namespace VirtualLibrary.Services
                                 Description = description != null ? Trim(description, 4000) : null,
                                 Isbn = isbn,
                                 Price = Math.Round((decimal)(_rng.Next(15, 100) + _rng.NextDouble()), 2),
-                                Stock = _rng.Next(1, 50),
                                 ImagePath = localCover,
                                 PdfSource = pdfSource,
                                 CategoryId = category.CategoryId,

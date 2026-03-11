@@ -11,7 +11,9 @@
 <div class="mgmt-wrapper">
     <div class="mgmt-container">
         <header class="mgmt-header">
-            <a asp-page="./Index" class="back-link"><i class='bx bx-left-arrow-alt'></i> Back to Books</a>
+            <a asp-page="./Index" class="back-link">
+                <i class='bx bx-left-arrow-alt'></i> Back to Books
+            </a>
             <h2 class="mt-2">Bulk Import Books</h2>
         </header>
 
@@ -19,25 +21,30 @@
             <div class="import-info-box mb-4">
                 <i class='bx bx-info-circle'></i>
                 <p>
-                    Import books automatically by subject keyword from <strong>Google Books API</strong>.
-                    PDFs will be automatically searched on <strong>Open Library</strong> after import.
-                    This process might take a few moments depending on the count.
+                    Import books automatically from the <strong>Open Library API</strong>.
+                    The app also enriches metadata from <strong>Google Books</strong>,
+                    generates a separate <strong>details PDF</strong> for every imported product,
+                    and tries to attach the real <strong>book PDF</strong> when one is publicly available.
                 </p>
             </div>
 
             <form method="post" class="row g-4" id="importForm">
                 <div class="col-md-8">
                     <div class="input-group-modern">
-                        <label asp-for="Subject">Subject (ex: fiction, history, computers, science)</label>
-                        <input asp-for="Subject" placeholder="Enter keyword..." />
+                        <label asp-for="Subject">Subject</label>
+                        <input asp-for="Subject" placeholder="Ex: fiction, history, science, computers..." />
+                        <span asp-validation-for="Subject" class="text-error"></span>
                     </div>
                 </div>
+
                 <div class="col-md-4">
                     <div class="input-group-modern">
                         <label asp-for="Count">Count</label>
-                        <input asp-for="Count" type="number" min="1" max="400" />
+                        <input asp-for="Count" type="number" min="1" max="200" />
+                        <span asp-validation-for="Count" class="text-error"></span>
                     </div>
                 </div>
+
                 <div class="col-12 form-actions mt-2">
                     <button type="submit" class="btn-save" id="importBtn">
                         <i class='bx bx-cloud-download'></i> Run Import
@@ -46,26 +53,33 @@
                 </div>
             </form>
 
-            <div id="loadingOverlay" style="display:none; margin-top: 20px; padding: 30px; text-align: center; background: #f0f7ff; border-radius: 12px; border: 2px solid #3b82f6;">
-                <div style="margin-bottom: 15px;">
-                    <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+            <div id="loadingOverlay"
+                 style="display:none; margin-top:20px; padding:30px; text-align:center; background:#f0f7ff; border-radius:12px; border:2px solid #3b82f6;">
+                <div style="margin-bottom:15px;">
+                    <div class="spinner-border text-primary" role="status" style="width:3rem; height:3rem;">
                         <span class="visually-hidden">Loading...</span>
                     </div>
                 </div>
-                <h4 style="color: #1e40af;">⏳ Importing Books...</h4>
-                <p style="color: #64748b;">
-                    Fetching books from Google Books API and searching for PDFs on Open Library.<br>
-                    This may take <strong>30-90 seconds</strong> depending on the count. Please don't close this page.
+
+                <h4 style="color:#1e40af;">⏳ Importing Books...</h4>
+                <p style="color:#64748b;">
+                    Fetching books, enriching metadata, generating details PDFs
+                    and trying to attach real PDFs where possible.
                 </p>
             </div>
         </div>
     </div>
 </div>
 
-<script>
-    document.getElementById('importForm').addEventListener('submit', function () {
-        document.getElementById('importBtn').disabled = true;
-        document.getElementById('importBtn').innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Importing...';
-        document.getElementById('loadingOverlay').style.display = 'block';
-    });
-</script>
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        document.getElementById('importForm').addEventListener('submit', function () {
+            document.getElementById('importBtn').disabled = true;
+            document.getElementById('importBtn').innerHTML =
+                '<span class="spinner-border spinner-border-sm me-2"></span> Importing...';
+            document.getElementById('loadingOverlay').style.display = 'block';
+        });
+    </script>
+}
