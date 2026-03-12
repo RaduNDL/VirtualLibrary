@@ -1,0 +1,40 @@
+﻿body {
+}
+.product-image-placeholder {
+    height: 420px;
+}
+
+.product-image-placeholder-icon {
+    font-size: 5rem;
+    color: #c7c7c7;
+}
+
+.similar-products-section {
+    border-top: 1px solid #e9ecef;
+    padding-top: 2rem;
+}
+
+.similar-product-card {
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.similar-product-image {
+    height: 240px;
+    object-fit: cover;
+    background: #f8f9fa;
+}
+
+.similar-product-category {
+    display: inline-block;
+    margin-bottom: 0.75rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.similarity-badge {
+    width: fit-content;
+}

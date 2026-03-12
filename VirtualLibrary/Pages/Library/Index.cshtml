@@ -7,35 +7,41 @@
 
 <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
 <link rel="stylesheet" href="~/css/Library.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/css/LibraryAutocomplete.css" asp-append-version="true" />
 
 <div class="library-wrapper">
     <div class="library-container">
-
         <div class="library-header">
             <div class="header-left">
                 <h2>Available Books</h2>
 
-                @if (Model.Products != null && Model.Products.Any())
+                @if (Model.Products.Any())
                 {
-                    <span class="badge-count">@Model.Products.Count() book(s) found</span>
+                    <span class="badge-count">@Model.Products.Count book(s) found</span>
                 }
             </div>
 
             <div class="header-right">
-                <form method="get" class="search-form">
-                    <div class="search-bar">
-                        <i class='bx bx-search'></i>
-                        <input type="text"
-                               name="q"
-                               value="@Model.q"
-                               placeholder="Search by title..." />
-                        <button type="submit">Search</button>
+                <form method="get" class="search-form" autocomplete="off">
+                    <div class="search-autocomplete-wrapper">
+                        <div class="search-bar">
+                            <i class='bx bx-search'></i>
+                            <input type="text"
+                                   id="librarySearchInput"
+                                   name="q"
+                                   value="@Model.q"
+                                   placeholder="Search by title..."
+                                   aria-label="Search by title" />
+                            <button type="submit">Search</button>
+                        </div>
+
+                        <div id="libraryAutocompleteBox" class="autocomplete-box"></div>
                     </div>
                 </form>
             </div>
         </div>
 
-        @if (Model.Products == null || !Model.Products.Any())
+        @if (!Model.Products.Any())
         {
             <div class="empty-state">
                 <i class='bx bx-search-alt-2'></i>
@@ -43,7 +49,7 @@
                 @if (!string.IsNullOrWhiteSpace(Model.q))
                 {
                     <h3>No books match "@Model.q"</h3>
-                    <a href="@Url.Page("/Library/Index")" class="btn-primary">Clear search</a>
+                    <a asp-page="/Library/Index" class="btn-primary">Clear search</a>
                 }
                 else
                 {
@@ -60,11 +66,10 @@
 
                     if (!string.IsNullOrWhiteSpace(shortDesc) && shortDesc.Length > 120)
                     {
-                        shortDesc = shortDesc.Substring(0, 120) + "...";
+                        shortDesc = shortDesc[..120] + "...";
                     }
 
-                    var isFavorite = Model.FavoriteProductIds != null &&
-                    Model.FavoriteProductIds.Contains(product.Id);
+                    var isFavorite = Model.FavoriteProductIds.Contains(product.Id);
 
                     <div class="book-card">
                         <div class="book-cover-wrapper">
@@ -96,15 +101,13 @@
                                     <i class='bx bx-store'></i>
                                     @product.Supplier?.Name
                                 </span>
-
-                                
                             </div>
                         </div>
 
                         <div class="book-actions">
                             <a asp-page="/Products/Details"
-                               asp-route-id="@product.Id"
-                               class="btn-details">
+                                   asp-route-id="@product.Id"
+                                   class="btn-details">
                                 Details
                             </a>
 
@@ -135,6 +138,10 @@
                 }
             </div>
         }
-
     </div>
 </div>
+
+@section Scripts {
+    <script src="~/js/library-autocomplete.js" asp-append-version="true"></script>
+    <script src="~/js/library-autocomplete-config.js" asp-append-version="true"></script>
+}

@@ -6,6 +6,7 @@
 }
 
 <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+<link rel="stylesheet" href="~/css/ProductDetails.css" asp-append-version="true" />
 
 <div class="container mt-4 mb-5">
     <div class="mb-3">
@@ -25,16 +26,19 @@
             }
             else
             {
-                <div class="bg-light d-flex align-items-center justify-content-center rounded shadow"
-                     style="height:420px;">
-                    <i class='bx bx-book-content' style="font-size:5rem;color:#c7c7c7;"></i>
+                <div class="bg-light d-flex align-items-center justify-content-center rounded shadow product-image-placeholder">
+                    <i class='bx bx-book-content product-image-placeholder-icon'></i>
                 </div>
             }
         </div>
 
         <div class="col-lg-8">
             <div class="mb-3">
-                <span class="badge bg-secondary">@Model.Product.Category?.Name</span>
+                @if (!string.IsNullOrWhiteSpace(Model.Product.Category?.Name))
+                {
+                    <span class="badge bg-secondary">@Model.Product.Category.Name</span>
+                }
+
                 @if (!string.IsNullOrWhiteSpace(Model.Product.Supplier?.Name))
                 {
                     <span class="badge bg-light text-dark border">@Model.Product.Supplier.Name</span>
@@ -53,8 +57,8 @@
                     <h5 class="fw-bold mb-3">Description</h5>
                     <p class="mb-0">
                         @(string.IsNullOrWhiteSpace(Model.Product.Description)
-                                                ? "No description available."
-                                                : Model.Product.Description)
+                            ? "No description available."
+                            : Model.Product.Description)
                     </p>
                 </div>
             </div>
@@ -104,9 +108,7 @@
             <h3 class="text-success fw-bold mb-4">@Model.Product.Price.ToString("0.00") RON</h3>
 
             <div class="d-flex flex-wrap gap-2 mb-4">
-                <form method="post"
-                      asp-page="/Cart/Index"
-                      asp-page-handler="Add">
+                <form method="post" asp-page="/Cart/Index" asp-page-handler="Add">
                     <input type="hidden" name="productId" value="@Model.Product.Id" />
                     <button type="submit" class="btn btn-primary btn-lg">
                         <i class='bx bxs-cart-add'></i> Add to Cart
@@ -116,8 +118,8 @@
                 @if (Model.HasDescriptionPdf)
                 {
                     <a asp-page="/Products/DescriptionPdf"
-                       asp-route-id="@Model.Product.Id"
-                       class="btn btn-outline-secondary btn-lg">
+                           asp-route-id="@Model.Product.Id"
+                           class="btn btn-outline-secondary btn-lg">
                         <i class='bx bxs-file-pdf'></i> View Details PDF
                     </a>
                 }
@@ -125,8 +127,8 @@
                 @if (Model.HasBookPdf)
                 {
                     <a asp-page="/Products/ReadPdf"
-                       asp-route-id="@Model.Product.Id"
-                       class="btn btn-dark btn-lg">
+                           asp-route-id="@Model.Product.Id"
+                           class="btn btn-dark btn-lg">
                         <i class='bx bxs-book-open'></i> Open Book PDF
                     </a>
                 }
@@ -139,20 +141,20 @@
 
                     <div class="d-flex flex-wrap gap-2">
                         <a asp-page="./Edit"
-                           asp-route-id="@Model.Product.Id"
-                           class="btn btn-outline-secondary">
+                               asp-route-id="@Model.Product.Id"
+                               class="btn btn-outline-secondary">
                             Edit Product
                         </a>
 
                         <a asp-page="./ManagePdf"
-                           asp-route-id="@Model.Product.Id"
-                           class="btn btn-outline-secondary">
+                               asp-route-id="@Model.Product.Id"
+                               class="btn btn-outline-secondary">
                             Manage PDF
                         </a>
 
                         <a asp-page="./Delete"
-                           asp-route-id="@Model.Product.Id"
-                           class="btn btn-outline-danger">
+                               asp-route-id="@Model.Product.Id"
+                               class="btn btn-outline-danger">
                             Delete
                         </a>
                     </div>
@@ -160,4 +162,53 @@
             }
         </div>
     </div>
+
+    <section class="similar-products-section mt-5">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3 class="mb-0">Similar books</h3>
+        </div>
+
+        @if (Model.SimilarProducts.Any())
+        {
+            <div class="row g-3">
+                @foreach (var item in Model.SimilarProducts)
+                {
+                    <div class="col-md-6 col-xl-4">
+                        <div class="card h-100 shadow-sm">
+                            @if (!string.IsNullOrWhiteSpace(item.Product.ImagePath))
+                            {
+                                <img src="~/@item.Product.ImagePath"
+                                     class="card-img-top"
+                                     alt="@item.Product.Title"
+                                     onerror="this.src='/images/no-cover.svg';this.onerror=null;" />
+                            }
+
+                            <div class="card-body d-flex flex-column">
+                                <h5 class="card-title">@item.Product.Title</h5>
+
+                                @if (!string.IsNullOrWhiteSpace(item.Product.Author))
+                                {
+                                    <p class="text-muted mb-2">by @item.Product.Author</p>
+                                }
+
+                                <span class="badge bg-secondary mb-3">
+                                    Similarity: @item.SimilarityPercent%
+                                </span>
+
+                                <a asp-page="/Products/Details"
+                                       asp-route-id="@item.Product.Id"
+                                       class="btn btn-outline-primary mt-auto">
+                                    View details
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <p class="text-muted mb-0">No similar recommendations found for this book.</p>
+        }
+    </section>
 </div>

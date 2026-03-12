@@ -76,7 +76,8 @@ builder.Services.AddScoped<BookMetadataEnricher>();
 builder.Services.AddScoped<BookPdfGenerator>();
 builder.Services.AddScoped<BookImporter>();
 builder.Services.AddScoped<AudiobookService>();
-
+builder.Services.AddMemoryCache();
+builder.Services.AddScoped<ProductDiscoveryService>();
 builder.Services.AddSingleton<AudiobookQueue>();
 builder.Services.AddHostedService<AudiobookWorker>();
 
