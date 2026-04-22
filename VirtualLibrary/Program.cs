@@ -43,12 +43,12 @@ builder.Services.ConfigureApplicationCookie(options =>
 
 builder.Services.Configure<FormOptions>(options =>
 {
-    options.MultipartBodyLengthLimit = 104_857_600; 
+    options.MultipartBodyLengthLimit = 104_857_600;
 });
 
 builder.WebHost.ConfigureKestrel(options =>
 {
-    options.Limits.MaxRequestBodySize = 104_857_600; 
+    options.Limits.MaxRequestBodySize = 104_857_600;
 });
 
 builder.Services.AddRazorPages()
@@ -56,9 +56,6 @@ builder.Services.AddRazorPages()
     .AddMvcOptions(o => o.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true)
 #endif
     ;
-
-builder.Services.AddControllers();
-
 
 builder.Services.AddHttpClient("PdfClient")
     .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
@@ -70,19 +67,17 @@ builder.Services.AddHttpClient("PdfClient")
             System.Net.DecompressionMethods.Deflate
     });
 
+builder.Services.AddMemoryCache();
 
 builder.Services.AddScoped<PdfService>();
-builder.Services.AddScoped<BookMetadataEnricher>();
 builder.Services.AddScoped<BookPdfGenerator>();
 builder.Services.AddScoped<BookImporter>();
-builder.Services.AddScoped<AudiobookService>();
-builder.Services.AddMemoryCache();
 builder.Services.AddScoped<ProductDiscoveryService>();
-builder.Services.AddSingleton<AudiobookQueue>();
-builder.Services.AddHostedService<AudiobookWorker>();
+builder.Services.AddScoped<LuceneSpecificationSearchService>();
+
+builder.Services.AddHostedService<LuceneSpecificationIndexHostedService>();
 
 var app = builder.Build();
-
 
 var webRoot = app.Environment.WebRootPath;
 var contentRoot = app.Environment.ContentRootPath;
@@ -94,8 +89,7 @@ Directory.CreateDirectory(Path.Combine(webRoot, "pdfs", "descriptions"));
 Directory.CreateDirectory(Path.Combine(webRoot, "uploads"));
 Directory.CreateDirectory(Path.Combine(webRoot, "uploads", "books"));
 Directory.CreateDirectory(Path.Combine(webRoot, "uploads", "pdfs"));
-Directory.CreateDirectory(Path.Combine(contentRoot, "GeneratedAudio"));
-
+Directory.CreateDirectory(Path.Combine(contentRoot, "LuceneIndex", "Specifications"));
 
 using (var scope = app.Services.CreateScope())
 {
@@ -171,7 +165,6 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-
 if (app.Environment.IsDevelopment())
 {
     app.UseMigrationsEndPoint();
@@ -191,6 +184,5 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapRazorPages();
-app.MapControllers();
 
 app.Run();

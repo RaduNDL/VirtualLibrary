@@ -8,7 +8,8 @@ namespace VirtualLibrary.Models
         [Key]
         public int Id { get; set; }
 
-        [Required, StringLength(200)]
+        [Required]
+        [StringLength(200)]
         public string Title { get; set; } = string.Empty;
 
         [StringLength(200)]
@@ -40,15 +41,9 @@ namespace VirtualLibrary.Models
         [StringLength(500)]
         public string? ImagePath { get; set; }
 
-        // PDF DESCRIPTIV
+   
         [StringLength(500)]
         public string? DescriptionPdfPath { get; set; }
-
-        [StringLength(500)]
-        public string? BookPdfPath { get; set; }
-
-        [StringLength(50)]
-        public string? BookPdfSource { get; set; }
 
         public int? CategoryId { get; set; }
         public Category? Category { get; set; }
@@ -61,12 +56,5 @@ namespace VirtualLibrary.Models
 
         [NotMapped]
         public bool HasDescriptionPdf => !string.IsNullOrWhiteSpace(DescriptionPdfPath);
-
-        [NotMapped]
-        public bool HasBookPdf => !string.IsNullOrWhiteSpace(BookPdfPath);
-
-        public string? PdfFilePath { get; internal set; }
-        public string PdfSource { get; internal set; }
-        public bool HasPdfAvailable { get; internal set; }
     }
 }

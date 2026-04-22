@@ -6,7 +6,7 @@
 }
 
 <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
-<link rel="stylesheet" href="~/css/ReadPdf.css">
+<link rel="stylesheet" href="~/css/ReadPdf.css" asp-append-version="true" />
 
 <div class="reader-wrapper">
     <header class="reader-header">
@@ -31,37 +31,14 @@
                     <h5 class="fw-bold mb-3">Book Details</h5>
 
                     <p class="mb-2"><strong>Title:</strong> @Model.Product.Title</p>
-
-                    @if (!string.IsNullOrWhiteSpace(Model.Product.Author))
-                    {
-                        <p class="mb-2"><strong>Author:</strong> @Model.Product.Author</p>
-                    }
-
-                    @if (!string.IsNullOrWhiteSpace(Model.Product.Category?.Name))
-                    {
-                        <p class="mb-2"><strong>Category:</strong> @Model.Product.Category.Name</p>
-                    }
-
-                    @if (!string.IsNullOrWhiteSpace(Model.Product.Publisher))
-                    {
-                        <p class="mb-2"><strong>Publisher:</strong> @Model.Product.Publisher</p>
-                    }
-
-                    @if (!string.IsNullOrWhiteSpace(Model.Product.Isbn))
-                    {
-                        <p class="mb-2"><strong>ISBN:</strong> @Model.Product.Isbn</p>
-                    }
-
-                    @if (Model.Product.PublishedYear.HasValue)
-                    {
-                        <p class="mb-2"><strong>Published Year:</strong> @Model.Product.PublishedYear.Value</p>
-                    }
-
-                    @if (Model.Product.PageCount.HasValue)
-                    {
-                        <p class="mb-2"><strong>Page Count:</strong> @Model.Product.PageCount.Value</p>
-                    }
-
+                    <p class="mb-2"><strong>Author:</strong> @(Model.Product.Author ?? "-")</p>
+                    <p class="mb-2"><strong>Category:</strong> @(Model.Product.Category?.Name ?? "-")</p>
+                    <p class="mb-2"><strong>Publisher:</strong> @(Model.Product.Publisher ?? "-")</p>
+                    <p class="mb-2"><strong>ISBN:</strong> @(Model.Product.Isbn ?? "-")</p>
+                    <p class="mb-2"><strong>Published Year:</strong> @(Model.Product.PublishedYear?.ToString() ?? "-")</p>
+                    <p class="mb-2"><strong>Page Count:</strong> @(Model.Product.PageCount?.ToString() ?? "-")</p>
+                    <p class="mb-2"><strong>Language:</strong> @(Model.Product.Language ?? "-")</p>
+                    <p class="mb-2"><strong>Rating:</strong> @(Model.Product.Rating?.ToString("0.0") ?? "-")</p>
                     <p class="mb-0"><strong>Price:</strong> @Model.Product.Price.ToString("0.00") RON</p>
                 </div>
             </div>
@@ -73,10 +50,6 @@
                         class="pdf-iframe"
                         title="Details PDF for @Model.Product.Title"
                         allowfullscreen>
-                    <p>
-                        Your browser does not support inline PDFs.
-                        <a href="@Model.PdfUrl" target="_blank">Open PDF</a>.
-                    </p>
                 </iframe>
             </div>
 
@@ -88,15 +61,6 @@
                 <a href="@Model.PdfUrl" target="_blank" class="btn-fullscreen">
                     <i class='bx bx-fullscreen'></i> Open in New Tab
                 </a>
-
-                @if (!string.IsNullOrWhiteSpace(Model.Product.PdfFilePath))
-                {
-                    <a asp-page="./ReadPdf"
-                       asp-route-id="@Model.Product.Id"
-                       class="btn-fullscreen">
-                        <i class='bx bx-book-open'></i> Open Book PDF
-                    </a>
-                }
             </div>
         </div>
     </div>

@@ -7,11 +7,27 @@ using VirtualLibrary.Models;
 
 namespace VirtualLibrary.Services
 {
-    public class ProductDiscoveryService
+    public sealed class ProductDiscoveryService
     {
-        private const string CacheKey = "product_discovery_index";
+        private const string CacheKey = "product_discovery_index_v5";
+
         private readonly AppDbContext _db;
         private readonly IMemoryCache _cache;
+
+        private static readonly HashSet<string> StopWords = new(StringComparer.Ordinal)
+        {
+            "a", "an", "the",
+            "at", "by", "for", "from", "in", "into", "of", "off",
+            "on", "onto", "out", "over", "per", "to", "up", "via",
+            "with", "within", "without",
+            "about", "above", "across", "after", "against", "along",
+            "among", "around", "as", "before", "behind", "below",
+            "beneath", "beside", "between", "beyond", "during",
+            "except", "inside", "near", "outside", "since",
+            "through", "throughout", "under", "underneath", "until",
+            "upon", "versus", "vs",
+            "and", "but", "or", "nor", "so", "yet",
+        };
 
         public ProductDiscoveryService(AppDbContext db, IMemoryCache cache)
         {
@@ -21,360 +37,292 @@ namespace VirtualLibrary.Services
 
         public async Task<List<Product>> SearchAsync(string query, int take = 100)
         {
-            var index = await GetIndexAsync();
-
             if (string.IsNullOrWhiteSpace(query))
-            {
-                return index.Documents
-                    .Select(d => d.Product)
-                    .Take(take)
-                    .ToList();
-            }
+                return new List<Product>();
 
-            var queryTokens = Tokenize(query);
-            var queryVector = BuildVector(queryTokens, index.Idf);
-            var queryNorm = Norm(queryVector);
-            var normalizedQuery = Normalize(query);
+            string normalized = Normalize(query);
+            if (string.IsNullOrWhiteSpace(normalized))
+                return new List<Product>();
+
+            string[] queryWords = RemoveStopWords(SplitWords(normalized), keepLast: true);
+
+            if (queryWords.Length == 0)
+                return new List<Product>();
+
+            var index = await GetIndexAsync();
 
             return index.Documents
                 .Select(d => new
                 {
                     d.Product,
-                    Score = Cosine(queryVector, queryNorm, d.Vector, d.VectorNorm) +
-                            SearchTitleBoost(d.NormalizedTitle, normalizedQuery)
+                    Match = ComputeMatch(queryWords, d.TitleWords)
                 })
-                .Where(x => x.Score > 0)
-                .OrderByDescending(x => x.Score)
+                .Where(x => x.Match.IsMatch)
+                .OrderBy(x => x.Match.TotalDistance)
+                .ThenBy(x => x.Product.Title.Length)
                 .ThenBy(x => x.Product.Title)
                 .Take(take)
                 .Select(x => x.Product)
                 .ToList();
         }
 
-        public async Task<List<AutocompleteSuggestionDto>> GetAutocompleteSuggestionsAsync(string term, int take = 8)
+        public async Task<List<ProductSuggestionDto>> GetAutocompleteSuggestionsAsync(string term, int take = 8)
         {
             if (string.IsNullOrWhiteSpace(term))
-            {
-                return new List<AutocompleteSuggestionDto>();
-            }
+                return new List<ProductSuggestionDto>();
+
+            string normalized = Normalize(term);
+            if (string.IsNullOrWhiteSpace(normalized))
+                return new List<ProductSuggestionDto>();
+
+            string[] queryWords = RemoveStopWords(SplitWords(normalized), keepLast: true);
+
+            if (queryWords.Length == 0)
+                return new List<ProductSuggestionDto>();
 
             var index = await GetIndexAsync();
-            var normalizedTerm = Normalize(term);
-
-            if (string.IsNullOrWhiteSpace(normalizedTerm))
-            {
-                return new List<AutocompleteSuggestionDto>();
-            }
 
             return index.Documents
                 .Select(d => new
                 {
-                    d.Product.Id,
-                    d.Product.Title,
-                    Score = AutocompleteScore(d.NormalizedTitle, normalizedTerm)
+                    d.Product,
+                    Match = ComputeMatch(queryWords, d.TitleWords)
                 })
-                .Where(x => x.Score > 0)
-                .OrderByDescending(x => x.Score)
-                .ThenBy(x => x.Title)
+                .Where(x => x.Match.IsMatch)
+                .OrderBy(x => x.Match.TotalDistance)
+                .ThenBy(x => x.Product.Title.Length)
+                .ThenBy(x => x.Product.Title)
                 .Take(take)
-                .Select(x => new AutocompleteSuggestionDto
+                .Select(x => new ProductSuggestionDto
                 {
-                    ProductId = x.Id,
-                    Title = x.Title
+                    Id = x.Product.Id,
+                    Title = x.Product.Title,
+                    Score = x.Match.TotalDistance
                 })
                 .ToList();
         }
 
-        public async Task<List<SimilarProductResult>> GetSimilarProductsAsync(int productId, int take = 6)
+        private static string[] RemoveStopWords(string[] words, bool keepLast)
         {
-            var index = await GetIndexAsync();
-            var current = index.Documents.FirstOrDefault(x => x.Product.Id == productId);
+            if (words.Length == 0)
+                return words;
 
-            if (current == null)
+            var result = new List<string>(words.Length);
+
+            for (int i = 0; i < words.Length; i++)
             {
-                return new List<SimilarProductResult>();
+                bool isLast = i == words.Length - 1;
+
+                if (isLast && keepLast)
+                {
+                    result.Add(words[i]);
+                    continue;
+                }
+
+                if (!StopWords.Contains(words[i]))
+                    result.Add(words[i]);
             }
 
-            return index.Documents
-                .Where(x => x.Product.Id != productId)
-                .Select(x => new SimilarProductResult
-                {
-                    Product = x.Product,
-                    Similarity = Cosine(current.Vector, current.VectorNorm, x.Vector, x.VectorNorm)
-                })
-                .Where(x => x.Similarity > 0.05)
-                .OrderByDescending(x => x.Similarity)
-                .Take(take)
-                .ToList();
+            return result.ToArray();
         }
 
-        public void InvalidateCache()
+        private static MatchResult ComputeMatch(string[] queryWords, string[] titleWords)
         {
-            _cache.Remove(CacheKey);
+            if (queryWords.Length == 0 || titleWords.Length == 0)
+                return MatchResult.NoMatch();
+
+            if (queryWords.Length > titleWords.Length)
+                return MatchResult.NoMatch();
+
+            int lastIndex = queryWords.Length - 1;
+            bool[] used = new bool[titleWords.Length];
+            int totalDistance = 0;
+
+            for (int qi = 0; qi < lastIndex; qi++)
+            {
+                string qWord = queryWords[qi];
+                int maxDist = GetMaxDistance(qWord.Length, false);
+
+                int bestDist = int.MaxValue;
+                int bestTi = -1;
+
+                for (int ti = 0; ti < titleWords.Length; ti++)
+                {
+                    if (used[ti]) continue;
+
+                    int dist = ComputeLevenshteinDistance(qWord, titleWords[ti]);
+                    if (dist < bestDist)
+                    {
+                        bestDist = dist;
+                        bestTi = ti;
+                    }
+                }
+
+                if (bestTi == -1 || bestDist > maxDist)
+                    return MatchResult.NoMatch();
+
+                used[bestTi] = true;
+                totalDistance += bestDist;
+            }
+
+            {
+                string prefix = queryWords[lastIndex];
+                int maxDist = GetMaxDistance(prefix.Length, true);
+
+                int bestDist = int.MaxValue;
+                int bestTi = -1;
+
+                for (int ti = 0; ti < titleWords.Length; ti++)
+                {
+                    if (used[ti]) continue;
+
+                    string titleWord = titleWords[ti];
+                    string comparable = titleWord.Length >= prefix.Length
+                        ? titleWord.Substring(0, prefix.Length)
+                        : titleWord;
+
+                    int dist = ComputeLevenshteinDistance(prefix, comparable);
+
+                    if (dist < bestDist)
+                    {
+                        bestDist = dist;
+                        bestTi = ti;
+                    }
+                }
+
+                if (bestTi == -1 || bestDist > maxDist)
+                    return MatchResult.NoMatch();
+
+                totalDistance += bestDist;
+            }
+
+            return MatchResult.Yes(totalDistance);
+        }
+
+        private static int ComputeLevenshteinDistance(string a, string b)
+        {
+            if (string.IsNullOrEmpty(a)) return b?.Length ?? 0;
+            if (string.IsNullOrEmpty(b)) return a.Length;
+
+            int n = a.Length;
+            int m = b.Length;
+
+            var prev = new int[m + 1];
+            var curr = new int[m + 1];
+
+            for (int j = 0; j <= m; j++)
+                prev[j] = j;
+
+            for (int i = 1; i <= n; i++)
+            {
+                curr[0] = i;
+                for (int j = 1; j <= m; j++)
+                {
+                    int cost = a[i - 1] == b[j - 1] ? 0 : 1;
+                    curr[j] = Math.Min(Math.Min(prev[j] + 1, curr[j - 1] + 1), prev[j - 1] + cost);
+                }
+                (prev, curr) = (curr, prev);
+            }
+
+            return prev[m];
+        }
+
+        private static int GetMaxDistance(int tokenLength, bool isPrefix)
+        {
+            if (tokenLength <= 2) return 0;
+            if (tokenLength <= 4) return isPrefix ? 1 : 0;
+            if (tokenLength <= 7) return 1;
+            return 2;
         }
 
         private async Task<SearchIndex> GetIndexAsync()
         {
-            if (_cache.TryGetValue(CacheKey, out SearchIndex? cached) && cached != null)
-            {
+            if (_cache.TryGetValue(CacheKey, out SearchIndex? cached) && cached is not null)
                 return cached;
-            }
 
             var products = await _db.Products
                 .AsNoTracking()
-                .Include(p => p.Category)
-                .Include(p => p.Supplier)
+                .Where(p => !string.IsNullOrWhiteSpace(p.Title))
                 .ToListAsync();
-
-            var docs = products.Select(p =>
-            {
-                var fullText = $"{p.Title} {p.Description} {p.Author} {p.Category?.Name} {p.Publisher}";
-                var tokens = Tokenize(fullText);
-
-                return new ProductDocument
-                {
-                    Product = p,
-                    Tokens = tokens,
-                    NormalizedTitle = Normalize(p.Title)
-                };
-            }).ToList();
-
-            var df = new Dictionary<string, int>(StringComparer.Ordinal);
-
-            foreach (var doc in docs)
-            {
-                foreach (var token in doc.Tokens.Distinct())
-                {
-                    df[token] = df.TryGetValue(token, out var count) ? count + 1 : 1;
-                }
-            }
-
-            var documentCount = Math.Max(docs.Count, 1);
-
-            var idf = df.ToDictionary(
-                x => x.Key,
-                x => Math.Log((double)(documentCount + 1) / (x.Value + 1)) + 1.0,
-                StringComparer.Ordinal);
-
-            foreach (var doc in docs)
-            {
-                doc.Vector = BuildVector(doc.Tokens, idf);
-                doc.VectorNorm = Norm(doc.Vector);
-            }
 
             var index = new SearchIndex
             {
-                Documents = docs,
-                Idf = idf
+                Documents = products.Select(BuildDocument).ToList()
             };
 
-            _cache.Set(CacheKey, index, TimeSpan.FromMinutes(15));
+            _cache.Set(CacheKey, index, new MemoryCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(15)
+            });
+
             return index;
         }
 
-        private static Dictionary<string, double> BuildVector(List<string> tokens, Dictionary<string, double> idf)
+        private static IndexedProductDocument BuildDocument(Product product)
         {
-            var vector = new Dictionary<string, double>(StringComparer.Ordinal);
+            string[] allWords = SplitWords(Normalize(product.Title));
+            string[] filteredWords = RemoveStopWords(allWords, false);
 
-            if (tokens.Count == 0)
+            return new IndexedProductDocument
             {
-                return vector;
-            }
-
-            var tf = tokens
-                .GroupBy(x => x)
-                .ToDictionary(g => g.Key, g => (double)g.Count() / tokens.Count, StringComparer.Ordinal);
-
-            foreach (var item in tf)
-            {
-                if (idf.TryGetValue(item.Key, out var idfValue))
-                {
-                    vector[item.Key] = item.Value * idfValue;
-                }
-            }
-
-            return vector;
-        }
-
-        private static double Cosine(
-            Dictionary<string, double> a,
-            double normA,
-            Dictionary<string, double> b,
-            double normB)
-        {
-            if (normA == 0 || normB == 0)
-            {
-                return 0;
-            }
-
-            double dot = 0;
-            var smaller = a.Count <= b.Count ? a : b;
-            var larger = ReferenceEquals(smaller, a) ? b : a;
-
-            foreach (var kv in smaller)
-            {
-                if (larger.TryGetValue(kv.Key, out var other))
-                {
-                    dot += kv.Value * other;
-                }
-            }
-
-            return dot / (normA * normB);
-        }
-
-        private static double Norm(Dictionary<string, double> vector)
-        {
-            return Math.Sqrt(vector.Values.Sum(x => x * x));
-        }
-
-        private static double SearchTitleBoost(string normalizedTitle, string normalizedQuery)
-        {
-            if (string.IsNullOrWhiteSpace(normalizedQuery))
-            {
-                return 0;
-            }
-
-            double score = 0;
-
-            if (normalizedTitle == normalizedQuery)
-            {
-                score += 1.0;
-            }
-
-            if (normalizedTitle.Contains(normalizedQuery, StringComparison.Ordinal))
-            {
-                score += 0.4;
-            }
-
-            return score;
-        }
-
-        private static double AutocompleteScore(string normalizedTitle, string normalizedTerm)
-        {
-            if (string.IsNullOrWhiteSpace(normalizedTerm) || string.IsNullOrWhiteSpace(normalizedTitle))
-            {
-                return 0;
-            }
-
-            var maxLen = Math.Min(normalizedTerm.Length, normalizedTitle.Length);
-            var titleFragment = normalizedTitle[..maxLen];
-            var distance = Levenshtein(titleFragment, normalizedTerm);
-
-            if (distance > 3)
-            {
-                return 0;
-            }
-
-            return distance switch
-            {
-                0 => 100,
-                1 => 70,
-                2 => 40,
-                3 => 20,
-                _ => 0
+                Product = product,
+                TitleWords = filteredWords.Length > 0 ? filteredWords : allWords
             };
         }
 
-        private static List<string> Tokenize(string? text)
-        {
-            var normalized = Normalize(text);
+        private static string[] SplitWords(string text) =>
+            text.Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
-            return string.IsNullOrWhiteSpace(normalized)
-                ? new List<string>()
-                : normalized.Split(' ', StringSplitOptions.RemoveEmptyEntries).ToList();
-        }
-
-        private static string Normalize(string? text)
+        private static string Normalize(string text)
         {
             if (string.IsNullOrWhiteSpace(text))
-            {
                 return string.Empty;
-            }
 
-            var normalized = text.ToLowerInvariant().Normalize(NormalizationForm.FormD);
-            var sb = new StringBuilder();
+            string formD = text.ToLowerInvariant().Normalize(NormalizationForm.FormD);
+            var sb = new StringBuilder(formD.Length);
 
-            foreach (var ch in normalized)
+            foreach (char c in formD)
             {
-                var category = CharUnicodeInfo.GetUnicodeCategory(ch);
-
-                if (category == UnicodeCategory.NonSpacingMark)
-                {
+                if (CharUnicodeInfo.GetUnicodeCategory(c) == UnicodeCategory.NonSpacingMark)
                     continue;
-                }
 
-                sb.Append(char.IsLetterOrDigit(ch) ? ch : ' ');
+                sb.Append(char.IsLetterOrDigit(c) ? c : ' ');
             }
 
             return string.Join(" ", sb.ToString().Split(' ', StringSplitOptions.RemoveEmptyEntries));
         }
 
-        private static int Levenshtein(string a, string b)
+        private sealed class SearchIndex
         {
-            if (string.IsNullOrEmpty(a))
-            {
-                return b.Length;
-            }
-
-            if (string.IsNullOrEmpty(b))
-            {
-                return a.Length;
-            }
-
-            var dp = new int[a.Length + 1, b.Length + 1];
-
-            for (var i = 0; i <= a.Length; i++)
-            {
-                dp[i, 0] = i;
-            }
-
-            for (var j = 0; j <= b.Length; j++)
-            {
-                dp[0, j] = j;
-            }
-
-            for (var i = 1; i <= a.Length; i++)
-            {
-                for (var j = 1; j <= b.Length; j++)
-                {
-                    var cost = a[i - 1] == b[j - 1] ? 0 : 1;
-
-                    dp[i, j] = Math.Min(
-                        Math.Min(dp[i - 1, j] + 1, dp[i, j - 1] + 1),
-                        dp[i - 1, j - 1] + cost);
-                }
-            }
-
-            return dp[a.Length, b.Length];
+            public List<IndexedProductDocument> Documents { get; set; } = new();
         }
 
-        private class SearchIndex
-        {
-            public List<ProductDocument> Documents { get; set; } = new();
-            public Dictionary<string, double> Idf { get; set; } = new(StringComparer.Ordinal);
-        }
-
-        private class ProductDocument
+        private sealed class IndexedProductDocument
         {
             public Product Product { get; set; } = null!;
-            public string NormalizedTitle { get; set; } = string.Empty;
-            public List<string> Tokens { get; set; } = new();
-            public Dictionary<string, double> Vector { get; set; } = new(StringComparer.Ordinal);
-            public double VectorNorm { get; set; }
+            public string[] TitleWords { get; set; } = Array.Empty<string>();
+        }
+
+        private readonly struct MatchResult
+        {
+            public bool IsMatch { get; }
+            public int TotalDistance { get; }
+
+            private MatchResult(bool isMatch, int totalDistance)
+            {
+                IsMatch = isMatch;
+                TotalDistance = totalDistance;
+            }
+
+            public static MatchResult NoMatch() => new(false, int.MaxValue);
+            public static MatchResult Yes(int totalDistance) => new(true, totalDistance);
         }
     }
 
-    public class AutocompleteSuggestionDto
+    public sealed class ProductSuggestionDto
     {
-        public int ProductId { get; set; }
+        public int Id { get; set; }
         public string Title { get; set; } = string.Empty;
-    }
-
-    public class SimilarProductResult
-    {
-        public Product Product { get; set; } = null!;
-        public double Similarity { get; set; }
-
-        public int SimilarityPercent => (int)Math.Round(Math.Max(0, Math.Min(1, Similarity)) * 100);
+        public int Score { get; set; }
     }
 }

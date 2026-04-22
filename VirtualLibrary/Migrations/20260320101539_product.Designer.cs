@@ -12,8 +12,8 @@ using VirtualLibrary.Data;
 namespace VirtualLibrary.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260311103934_migration1")]
-    partial class migration1
+    [Migration("20260320101539_product")]
+    partial class product
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -247,49 +247,6 @@ namespace VirtualLibrary.Migrations
                     b.ToTable("ApplicationUsers");
                 });
 
-            modelBuilder.Entity("VirtualLibrary.Models.Audiobook", b =>
-                {
-                    b.Property<int>("AudiobookId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("AudiobookId"));
-
-                    b.Property<string>("AudioFilePath")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<DateTime?>("CompletedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<TimeSpan?>("Duration")
-                        .HasColumnType("time");
-
-                    b.Property<string>("ErrorMessage")
-                        .HasMaxLength(2000)
-                        .HasColumnType("nvarchar(2000)");
-
-                    b.Property<int>("ProductId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
-                        .HasDefaultValue("Pending");
-
-                    b.HasKey("AudiobookId");
-
-                    b.HasIndex("ProductId")
-                        .IsUnique();
-
-                    b.ToTable("Audiobooks");
-                });
-
             modelBuilder.Entity("VirtualLibrary.Models.CartItem", b =>
                 {
                     b.Property<int>("CartItemId")
@@ -442,14 +399,6 @@ namespace VirtualLibrary.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
-                    b.Property<string>("BookPdfPath")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<string>("BookPdfSource")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
                     b.Property<int?>("CategoryId")
                         .HasColumnType("int");
 
@@ -463,9 +412,6 @@ namespace VirtualLibrary.Migrations
                     b.Property<string>("DescriptionPdfPath")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
-
-                    b.Property<bool>("HasPdfAvailable")
-                        .HasColumnType("bit");
 
                     b.Property<string>("ImagePath")
                         .HasMaxLength(500)
@@ -481,13 +427,6 @@ namespace VirtualLibrary.Migrations
 
                     b.Property<int?>("PageCount")
                         .HasColumnType("int");
-
-                    b.Property<string>("PdfFilePath")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("PdfSource")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal>("Price")
                         .HasPrecision(18, 2)
@@ -608,17 +547,6 @@ namespace VirtualLibrary.Migrations
                         .HasForeignKey("VirtualLibrary.Models.ApplicationUser", "IdentityUserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-                });
-
-            modelBuilder.Entity("VirtualLibrary.Models.Audiobook", b =>
-                {
-                    b.HasOne("VirtualLibrary.Models.Product", "Product")
-                        .WithMany()
-                        .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Product");
                 });
 
             modelBuilder.Entity("VirtualLibrary.Models.CartItem", b =>

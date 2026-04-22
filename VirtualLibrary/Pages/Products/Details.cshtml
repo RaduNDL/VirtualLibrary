@@ -17,45 +17,67 @@
 
     <div class="row g-4">
         <div class="col-lg-4">
-            @if (!string.IsNullOrWhiteSpace(Model.Product.ImagePath))
-            {
-                <img src="~/@Model.Product.ImagePath"
-                     class="img-fluid rounded shadow"
-                     alt="@Model.Product.Title"
-                     onerror="this.src='/images/no-cover.svg';this.onerror=null;" />
-            }
-            else
-            {
-                <div class="bg-light d-flex align-items-center justify-content-center rounded shadow product-image-placeholder">
-                    <i class='bx bx-book-content product-image-placeholder-icon'></i>
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body text-center">
+                    @if (!string.IsNullOrWhiteSpace(Model.Product.ImagePath))
+                    {
+                        <img src="~/@Model.Product.ImagePath"
+                             class="img-fluid rounded shadow"
+                             alt="@Model.Product.Title"
+                             onerror="this.src='/images/no-cover.svg';this.onerror=null;" />
+                    }
+                    else
+                    {
+                        <img src="~/images/no-cover.svg"
+                             class="img-fluid rounded shadow"
+                             alt="No cover available" />
+                    }
+
+                    <div class="mt-3">
+                        <span class="badge bg-primary fs-6">@Model.Product.Price.ToString("0.00") RON</span>
+                    </div>
+
+                    @if (Model.HasDescriptionPdf)
+                    {
+                        <div class="mt-3 d-grid gap-2">
+                            <a asp-page="./DescriptionPdf" asp-route-id="@Model.Product.Id" class="btn btn-danger">
+                                <i class='bx bxs-file-pdf'></i> Open Details PDF
+                            </a>
+                        </div>
+                    }
                 </div>
-            }
+            </div>
         </div>
 
         <div class="col-lg-8">
-            <div class="mb-3">
-                @if (!string.IsNullOrWhiteSpace(Model.Product.Category?.Name))
-                {
-                    <span class="badge bg-secondary">@Model.Product.Category.Name</span>
-                }
-
-                @if (!string.IsNullOrWhiteSpace(Model.Product.Supplier?.Name))
-                {
-                    <span class="badge bg-light text-dark border">@Model.Product.Supplier.Name</span>
-                }
-            </div>
-
-            <h1 class="display-6 fw-bold">@Model.Product.Title</h1>
-
-            @if (!string.IsNullOrWhiteSpace(Model.Product.Author))
-            {
-                <h4 class="text-muted mb-4">by @Model.Product.Author</h4>
-            }
-
-            <div class="card border-0 bg-light mb-4">
+            <div class="card shadow-sm border-0 mb-4">
                 <div class="card-body">
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        @if (!string.IsNullOrWhiteSpace(Model.Product.Category?.Name))
+                        {
+                            <span class="badge bg-secondary">@Model.Product.Category.Name</span>
+                        }
+
+                        @if (!string.IsNullOrWhiteSpace(Model.Product.Supplier?.Name))
+                        {
+                            <span class="badge bg-light text-dark border">@Model.Product.Supplier.Name</span>
+                        }
+
+                        @if (Model.HasDescriptionPdf)
+                        {
+                            <span class="badge bg-success">Indexed PDF Available</span>
+                        }
+                    </div>
+
+                    <h1 class="fw-bold mb-2">@Model.Product.Title</h1>
+
+                    @if (!string.IsNullOrWhiteSpace(Model.Product.Author))
+                    {
+                        <p class="text-muted fs-5 mb-4">by @Model.Product.Author</p>
+                    }
+
                     <h5 class="fw-bold mb-3">Description</h5>
-                    <p class="mb-0">
+                    <p class="mb-0" style="white-space: pre-line;">
                         @(string.IsNullOrWhiteSpace(Model.Product.Description)
                             ? "No description available."
                             : Model.Product.Description)
@@ -63,152 +85,69 @@
                 </div>
             </div>
 
-            <div class="row g-3 mb-4">
-                @if (!string.IsNullOrWhiteSpace(Model.Product.Isbn))
-                {
-                    <div class="col-md-6">
-                        <div class="border rounded p-3 h-100">
-                            <strong>ISBN</strong>
-                            <div>@Model.Product.Isbn</div>
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <h5 class="fw-bold mb-3">Book Details</h5>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div><strong>Title:</strong> @Model.Product.Title</div>
                         </div>
-                    </div>
-                }
 
-                @if (!string.IsNullOrWhiteSpace(Model.Product.Publisher))
-                {
-                    <div class="col-md-6">
-                        <div class="border rounded p-3 h-100">
-                            <strong>Publisher</strong>
-                            <div>@Model.Product.Publisher</div>
+                        <div class="col-md-6">
+                            <div><strong>Author:</strong> @(Model.Product.Author ?? "-")</div>
                         </div>
-                    </div>
-                }
 
-                @if (Model.Product.PublishedYear.HasValue)
-                {
-                    <div class="col-md-6">
-                        <div class="border rounded p-3 h-100">
-                            <strong>Published Year</strong>
-                            <div>@Model.Product.PublishedYear.Value</div>
+                        <div class="col-md-6">
+                            <div><strong>ISBN:</strong> @(Model.Product.Isbn ?? "-")</div>
                         </div>
-                    </div>
-                }
 
-                @if (Model.Product.PageCount.HasValue)
-                {
-                    <div class="col-md-6">
-                        <div class="border rounded p-3 h-100">
-                            <strong>Page Count</strong>
-                            <div>@Model.Product.PageCount.Value</div>
+                        <div class="col-md-6">
+                            <div><strong>Publisher:</strong> @(Model.Product.Publisher ?? "-")</div>
                         </div>
-                    </div>
-                }
-            </div>
 
-            <h3 class="text-success fw-bold mb-4">@Model.Product.Price.ToString("0.00") RON</h3>
+                        <div class="col-md-6">
+                            <div><strong>Published Year:</strong> @(Model.Product.PublishedYear?.ToString() ?? "-")</div>
+                        </div>
 
-            <div class="d-flex flex-wrap gap-2 mb-4">
-                <form method="post" asp-page="/Cart/Index" asp-page-handler="Add">
-                    <input type="hidden" name="productId" value="@Model.Product.Id" />
-                    <button type="submit" class="btn btn-primary btn-lg">
-                        <i class='bx bxs-cart-add'></i> Add to Cart
-                    </button>
-                </form>
+                        <div class="col-md-6">
+                            <div><strong>Page Count:</strong> @(Model.Product.PageCount?.ToString() ?? "-")</div>
+                        </div>
 
-                @if (Model.HasDescriptionPdf)
-                {
-                    <a asp-page="/Products/DescriptionPdf"
-                           asp-route-id="@Model.Product.Id"
-                           class="btn btn-outline-secondary btn-lg">
-                        <i class='bx bxs-file-pdf'></i> View Details PDF
-                    </a>
-                }
+                        <div class="col-md-6">
+                            <div><strong>Language:</strong> @(Model.Product.Language ?? "-")</div>
+                        </div>
 
-                @if (Model.HasBookPdf)
-                {
-                    <a asp-page="/Products/ReadPdf"
-                           asp-route-id="@Model.Product.Id"
-                           class="btn btn-dark btn-lg">
-                        <i class='bx bxs-book-open'></i> Open Book PDF
-                    </a>
-                }
-            </div>
+                        <div class="col-md-6">
+                            <div><strong>Rating:</strong> @(Model.Product.Rating?.ToString("0.0") ?? "-")</div>
+                        </div>
 
-            @if (User.IsInRole("Administrator"))
-            {
-                <div class="mt-4 pt-4 border-top">
-                    <p class="text-danger small fw-bold text-uppercase mb-2">Admin Controls</p>
+                        <div class="col-md-6">
+                            <div><strong>Category:</strong> @(Model.Product.Category?.Name ?? "-")</div>
+                        </div>
 
-                    <div class="d-flex flex-wrap gap-2">
-                        <a asp-page="./Edit"
-                               asp-route-id="@Model.Product.Id"
-                               class="btn btn-outline-secondary">
-                            Edit Product
-                        </a>
+                        <div class="col-md-6">
+                            <div><strong>Supplier:</strong> @(Model.Product.Supplier?.Name ?? "-")</div>
+                        </div>
 
-                        <a asp-page="./ManagePdf"
-                               asp-route-id="@Model.Product.Id"
-                               class="btn btn-outline-secondary">
-                            Manage PDF
-                        </a>
+                        <div class="col-md-6">
+                            <div><strong>Price:</strong> @Model.Product.Price.ToString("0.00") RON</div>
+                        </div>
 
-                        <a asp-page="./Delete"
-                               asp-route-id="@Model.Product.Id"
-                               class="btn btn-outline-danger">
-                            Delete
-                        </a>
+                        <div class="col-md-6">
+                            <div><strong>Created At:</strong> @Model.Product.CreatedAtUtc.ToString("dd.MM.yyyy HH:mm") UTC</div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div><strong>Updated At:</strong> @(Model.Product.UpdatedAtUtc?.ToString("dd.MM.yyyy HH:mm 'UTC'") ?? "-")</div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div><strong>Details PDF:</strong> @(Model.HasDescriptionPdf ? "Yes" : "No")</div>
+                        </div>
                     </div>
                 </div>
-            }
+            </div>
         </div>
     </div>
-
-    <section class="similar-products-section mt-5">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h3 class="mb-0">Similar books</h3>
-        </div>
-
-        @if (Model.SimilarProducts.Any())
-        {
-            <div class="row g-3">
-                @foreach (var item in Model.SimilarProducts)
-                {
-                    <div class="col-md-6 col-xl-4">
-                        <div class="card h-100 shadow-sm">
-                            @if (!string.IsNullOrWhiteSpace(item.Product.ImagePath))
-                            {
-                                <img src="~/@item.Product.ImagePath"
-                                     class="card-img-top"
-                                     alt="@item.Product.Title"
-                                     onerror="this.src='/images/no-cover.svg';this.onerror=null;" />
-                            }
-
-                            <div class="card-body d-flex flex-column">
-                                <h5 class="card-title">@item.Product.Title</h5>
-
-                                @if (!string.IsNullOrWhiteSpace(item.Product.Author))
-                                {
-                                    <p class="text-muted mb-2">by @item.Product.Author</p>
-                                }
-
-                                <span class="badge bg-secondary mb-3">
-                                    Similarity: @item.SimilarityPercent%
-                                </span>
-
-                                <a asp-page="/Products/Details"
-                                       asp-route-id="@item.Product.Id"
-                                       class="btn btn-outline-primary mt-auto">
-                                    View details
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                }
-            </div>
-        }
-        else
-        {
-            <p class="text-muted mb-0">No similar recommendations found for this book.</p>
-        }
-    </section>
 </div>

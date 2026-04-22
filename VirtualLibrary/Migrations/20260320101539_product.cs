@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace VirtualLibrary.Migrations
 {
     /// <inheritdoc />
-    public partial class migration1 : Migration
+    public partial class product : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -221,15 +221,10 @@ namespace VirtualLibrary.Migrations
                     Price = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
                     ImagePath = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
                     DescriptionPdfPath = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
-                    BookPdfPath = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
-                    BookPdfSource = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
                     CategoryId = table.Column<int>(type: "int", nullable: true),
                     SupplierId = table.Column<int>(type: "int", nullable: true),
                     CreatedAtUtc = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    UpdatedAtUtc = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    PdfFilePath = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    PdfSource = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    HasPdfAvailable = table.Column<bool>(type: "bit", nullable: false)
+                    UpdatedAtUtc = table.Column<DateTime>(type: "datetime2", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -272,31 +267,6 @@ namespace VirtualLibrary.Migrations
                         name: "FK_Orders_AspNetUsers_UserId",
                         column: x => x.UserId,
                         principalTable: "AspNetUsers",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "Audiobooks",
-                columns: table => new
-                {
-                    AudiobookId = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    ProductId = table.Column<int>(type: "int", nullable: false),
-                    Status = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false, defaultValue: "Pending"),
-                    AudioFilePath = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
-                    ErrorMessage = table.Column<string>(type: "nvarchar(2000)", maxLength: 2000, nullable: true),
-                    CreatedAtUtc = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    CompletedAtUtc = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    Duration = table.Column<TimeSpan>(type: "time", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Audiobooks", x => x.AudiobookId);
-                    table.ForeignKey(
-                        name: "FK_Audiobooks_Products_ProductId",
-                        column: x => x.ProductId,
-                        principalTable: "Products",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -434,12 +404,6 @@ namespace VirtualLibrary.Migrations
                 filter: "[NormalizedUserName] IS NOT NULL");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Audiobooks_ProductId",
-                table: "Audiobooks",
-                column: "ProductId",
-                unique: true);
-
-            migrationBuilder.CreateIndex(
                 name: "IX_CartItems_ProductId",
                 table: "CartItems",
                 column: "ProductId");
@@ -512,9 +476,6 @@ namespace VirtualLibrary.Migrations
 
             migrationBuilder.DropTable(
                 name: "AspNetUserTokens");
-
-            migrationBuilder.DropTable(
-                name: "Audiobooks");
 
             migrationBuilder.DropTable(
                 name: "CartItems");

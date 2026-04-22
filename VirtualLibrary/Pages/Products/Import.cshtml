@@ -6,7 +6,7 @@
 }
 
 <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
-<link rel="stylesheet" href="~/css/AdminProducts.css">
+<link rel="stylesheet" href="~/css/AdminProducts.css" asp-append-version="true" />
 
 <div class="mgmt-wrapper">
     <div class="mgmt-container">
@@ -21,10 +21,9 @@
             <div class="import-info-box mb-4">
                 <i class='bx bx-info-circle'></i>
                 <p>
-                    Import books automatically from the <strong>Open Library API</strong>.
-                    The app also enriches metadata from <strong>Google Books</strong>,
-                    generates a separate <strong>details PDF</strong> for every imported product,
-                    and tries to attach the real <strong>book PDF</strong> when one is publicly available.
+                    Import metadata from <strong>Open Library</strong> and enrich details from
+                    <strong>Google Books</strong>. For each imported product, the app generates
+                    a <strong>details PDF</strong> and indexes it for <strong>Lucene full-text search</strong>.
                 </p>
             </div>
 
@@ -61,10 +60,9 @@
                     </div>
                 </div>
 
-                <h4 style="color:#1e40af;">⏳ Importing Books...</h4>
+                <h4 style="color:#1e40af;">Importing Books...</h4>
                 <p style="color:#64748b;">
-                    Fetching books, enriching metadata, generating details PDFs
-                    and trying to attach real PDFs where possible.
+                    Creating product records, generating detail PDFs and indexing them for Lucene search.
                 </p>
             </div>
         </div>

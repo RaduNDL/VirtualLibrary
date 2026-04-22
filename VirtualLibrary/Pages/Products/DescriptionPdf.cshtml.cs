@@ -32,13 +32,10 @@ namespace VirtualLibrary.Pages.Products
                 return NotFound();
 
             if (string.IsNullOrWhiteSpace(product.DescriptionPdfPath))
-            {
-                TempData["StatusMessage"] = "This book does not have a generated details PDF yet.";
-                return RedirectToPage("/Products/Details", new { id });
-            }
+                return NotFound();
 
             Product = product;
-            PdfUrl = Url.Content($"~/{product.DescriptionPdfPath}");
+            PdfUrl = "/" + product.DescriptionPdfPath.TrimStart('/');
 
             return Page();
         }

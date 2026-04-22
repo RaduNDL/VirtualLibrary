@@ -17,12 +17,15 @@ namespace VirtualLibrary.Pages.Products
             _logger = logger;
         }
 
-        [BindProperty] public string Subject { get; set; } = "fiction";
-        [BindProperty] public int Count { get; set; } = 60;
+        [BindProperty]
+        public string Subject { get; set; } = "fiction";
 
-        public string? Status { get; private set; }
+        [BindProperty]
+        public int Count { get; set; } = 60;
 
-        public void OnGet() { }
+        public void OnGet()
+        {
+        }
 
         public async Task<IActionResult> OnPostAsync()
         {
@@ -31,17 +34,21 @@ namespace VirtualLibrary.Pages.Products
                 if (Count <= 0) Count = 20;
                 if (Count > 400) Count = 400;
 
+                Subject = string.IsNullOrWhiteSpace(Subject) ? "fiction" : Subject.Trim();
+
                 _logger.LogInformation("Import requested: subject='{Subject}', count={Count}", Subject, Count);
 
                 var n = await _importer.ImportGoogleBooksAsync(Subject, Count);
 
                 if (n > 0)
                 {
-                    TempData["StatusMessage"] = $"✅ Successfully imported {n} book(s) for subject '{Subject}'. PDFs are being searched automatically in the background.";
+                    TempData["StatusMessage"] =
+                        $"✅ Successfully imported {n} book(s). Metadata, cover images, description PDFs and Lucene indexing were completed.";
                 }
                 else
                 {
-                    TempData["StatusMessage"] = $"⚠️ No books were imported for subject '{Subject}'. The Google Books API may be rate-limited. Try again in a few minutes or try a different subject.";
+                    TempData["StatusMessage"] =
+                        $"⚠️ No books were imported for subject '{Subject}'. Try another subject.";
                 }
             }
             catch (Exception ex)

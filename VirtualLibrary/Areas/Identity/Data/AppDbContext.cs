@@ -18,7 +18,6 @@ namespace VirtualLibrary.Data
         public DbSet<Order> Orders { get; set; }
         public DbSet<OrderItem> OrderItems { get; set; }
         public DbSet<CartItem> CartItems { get; set; }
-        public DbSet<Audiobook> Audiobooks { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -116,29 +115,7 @@ namespace VirtualLibrary.Data
                     .OnDelete(DeleteBehavior.Cascade);
             });
 
-            builder.Entity<Audiobook>(entity =>
-            {
-                entity.HasKey(a => a.AudiobookId);
-
-                entity.HasOne(a => a.Product)
-                    .WithMany()
-                    .HasForeignKey(a => a.ProductId)
-                    .OnDelete(DeleteBehavior.Cascade);
-
-                entity.Property(a => a.Status)
-                    .HasMaxLength(50)
-                    .HasConversion<string>()
-                    .HasDefaultValue(AudiobookStatus.Pending);
-
-                entity.Property(a => a.AudioFilePath)
-                    .HasMaxLength(500);
-
-                entity.Property(a => a.ErrorMessage)
-                    .HasMaxLength(2000);
-
-                entity.HasIndex(a => a.ProductId)
-                    .IsUnique();
-            });
+           
         }
     }
 }

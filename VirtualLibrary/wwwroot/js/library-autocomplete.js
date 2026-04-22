@@ -90,7 +90,7 @@
     input.addEventListener("input", async () => {
         const term = input.value.trim();
 
-        if (term.length < 2) {
+        if (term.length < 1) {
             hideBox();
             return;
         }

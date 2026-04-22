@@ -32,7 +32,7 @@ namespace VirtualLibrary.Pages.Library
         {
             if (!string.IsNullOrWhiteSpace(q))
             {
-                Products = await _discovery.SearchAsync(q);
+                Products = await _discovery.SearchAsync(q, 100);
             }
             else
             {
@@ -40,14 +40,17 @@ namespace VirtualLibrary.Pages.Library
                     .AsNoTracking()
                     .Include(p => p.Category)
                     .Include(p => p.Supplier)
+                    .OrderByDescending(p => p.CreatedAtUtc)
+                    .ThenBy(p => p.Title)
                     .ToListAsync();
             }
 
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            if (!string.IsNullOrEmpty(userId))
+            if (!string.IsNullOrWhiteSpace(userId))
             {
                 FavoriteProductIds = await _context.Favorites
+                    .AsNoTracking()
                     .Where(f => f.UserId == userId)
                     .Select(f => f.ProductId)
                     .ToHashSetAsync();
@@ -60,9 +63,9 @@ namespace VirtualLibrary.Pages.Library
 
             var data = suggestions.Select(s => new
             {
-                id = s.ProductId,
+                id = s.Id,
                 title = s.Title,
-                url = $"/Products/Details/{s.ProductId}"
+                url = $"/Products/Details/{s.Id}"
             });
 
             return new JsonResult(data);
